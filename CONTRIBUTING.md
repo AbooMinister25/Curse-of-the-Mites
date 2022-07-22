@@ -1,22 +1,45 @@
 ## Contributing
 
-Quick notes before I forget them, please rewrite this!
-
 Requirements:
- - Python 3.10
- - Poetry
- - NodeJS, some recent version
 
-Installation of Python dependencies: `poetry install`.
+- Python 3.10
+- Poetry
+- NodeJS, some recent version
 
-For the webapp (`/web`):
- - Install dependencies via `npm install`.
- - Build project via `npm run build` or `npm run dev` for auto-build.
+## Backend
 
-For development use: (no need to run multiple times)
+Install dependencies.
 
-`poetry run uvicorn main:app --reload`
+```shell
+poetry install
+```
 
-For deployment that should be:
+Install pre-commit. This will run checks on your code every time you try to commit.
 
-`poetry run uvicorn main:app --host 0.0.0.0 --port 80`
+```shell
+poetry run pre-commit install
+```
+
+Run server
+
+```shell
+poetry run uvicorn main:app --reload  # Development
+
+poetry run uvicorn main:app --host 0.0.0.0 --port 80  # Deployment
+```
+
+## Frontend
+
+Install dependencies.
+
+```shell
+npm install
+```
+
+Build the project.
+
+```shell
+npm run build
+```
+
+Alternatively you can run `npm run dev` which will automatically build.
