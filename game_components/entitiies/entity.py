@@ -5,7 +5,9 @@ import hashlib
 class Entity(ABC):
     health = None
     mana = None
+    alive = None
 
     def __init__(self, _health=100, _mana=100):
         self.health = _health
         self.mana = _mana
+        self.alive = True
