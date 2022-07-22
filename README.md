@@ -1,7 +1,3 @@
-The README has yet to be written.
-
----
-
 # Python Discord Code Jam Repository Template
 
 ## A Primer
