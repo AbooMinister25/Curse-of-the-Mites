@@ -17,3 +17,9 @@ class Entity(ABC):
         m = hashlib.sha256()
         m.update(now)
         self.uid = int(m.hexdigest(), 16)
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return f"{self.uid[0:4]} ({self.health},{self.mana}) {self.__class__.__name__}"

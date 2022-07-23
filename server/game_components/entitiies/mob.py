@@ -1,4 +1,4 @@
-from game_components.entitiies.entity import Entity
+from server.game_components.entitiies.entity import Entity
 
 
 class Mob(Entity):
