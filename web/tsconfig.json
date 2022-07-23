@@ -1,0 +1,7 @@
+{
+    "compilerOptions": {
+        "outDir": "../public",
+        "strict": true,
+        "module": "ESNext"
+    }
+}

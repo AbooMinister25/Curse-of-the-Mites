@@ -1,7 +1,8 @@
-from abc import ABC, abstractmethod  # abstract classes
 import hashlib
-from game_components.entitiies.player import Player
+from abc import ABC  # abstract classes
+
 from game_components.entitiies.mob import Mob
+from game_components.entitiies.player import Player
 
 
 class BaseRoom(ABC):
@@ -30,13 +31,18 @@ class BaseRoom(ABC):
     ):
         """
         Base Room
-        :param _title: Title of room
-        :param _display_char: display character of room
-        :param _color: color of tile (0-255,0-255,0-255) rgb
-        :param _description: description for room
-        :param _linked_rooms: dict of linked rooms, req eys are north, east, south and west. None if the rooms are not set
+
+        :param _title: Title of room.
+        :param _display_char: display character of room.
+        :param _color: color of tile (0-255,0-255,0-255) rgb.
+        :param _description: description for room.
+        :param _linked_rooms: dict of linked rooms, req keys are north, east, south and west.
+        None if the rooms are not set.
         """
-        data = f"{_title}{_description}{_linked_rooms['north']}{_linked_rooms['east']}{_linked_rooms['south']}{_linked_rooms['west']}"
+        data = (
+            f"{_title}{_description}{_linked_rooms['north']}{_linked_rooms['east']}"
+            f"{_linked_rooms['south']}{_linked_rooms['west']}"
+        )
         m = hashlib.sha256()
         m.update(data.encode())
         self.uid = int(m.hexdigest(), 16)
@@ -52,24 +58,18 @@ class BaseRoom(ABC):
         BaseRoom.number += 1
 
     def get_display(self) -> dict:
-        """
-        :return: dictionary of `color` and `display_char` for building map
-        """
+        """:return: dictionary of `color` and `display_char` for building map"""
         return {"color": self.__color, "display_char": self.__display_char}
 
     def show_mobs(self) -> str:
-        """
-        :return: get string of mobs in room
-        """
+        """:return: get string of mobs in room"""
         ret = ""
         for mob in self.__mobs:
             ret += f"{str(mob)}\n"
         return ret
 
     def show_players(self) -> str:
-        """
-        :return: get string of players in room
-        """
+        """:return: get string of players in room"""
         ret = ""
         for player in self.__players:
             ret += f"{str(player)}\n"
@@ -77,7 +77,8 @@ class BaseRoom(ABC):
 
     def add_player(self, _player: Player):
         """
-        add player to room
+        Add player to room
+
         :param _player: player object to add
         :return:
         """
@@ -85,7 +86,8 @@ class BaseRoom(ABC):
 
     def add_mob(self, _mob: Mob):
         """
-        add mob to room
+        Add mob to room
+
         :param _mob: mob object to add
         :return:
         """

@@ -1,7 +1,6 @@
 import hashlib
 import time
-
-from abc import ABC, abstractmethod  # abstract classes
+from abc import ABC  # abstract classes
 
 
 class Entity(ABC):

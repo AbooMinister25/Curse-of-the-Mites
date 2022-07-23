@@ -1,5 +1,3 @@
-
-
 from game_components.entitiies.entity import Entity
 
 
