@@ -23,6 +23,7 @@ class Console(Widget):
             border_style="white",
             box=box.SQUARE,
         )
+
         console_panel = Panel(
             "\n".join(self.console_log),
             border_style="white",
@@ -32,7 +33,7 @@ class Console(Widget):
         # display = Layout(Group(console_panel, message_panel))
         display = Layout()
         display.split_column(
-            Layout(console_panel, name="console", ratio=10),
+            Layout(console_panel, name="console", ratio=2),
             Layout(message_panel, name="message"),
         )
 
