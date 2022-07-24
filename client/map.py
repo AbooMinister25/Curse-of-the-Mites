@@ -9,7 +9,7 @@ from textual.widget import Widget
 
 def make_map_grid() -> Table:
     map_grid = Table.grid(expand=True)
-    
+
     for _ in range(30):
         map_grid.add_row("▆ " * 50)
 
@@ -21,8 +21,6 @@ class Map(Widget):
     grid = Reactive(make_map_grid())
 
     def render(self) -> Panel:
-        grid = make_map_grid()
-
         return Panel(
             Padding(Align.center(self.grid, vertical="middle")),
             border_style="green" if self.mouse_over else "blue",
