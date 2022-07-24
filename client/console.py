@@ -1,5 +1,5 @@
-from rich.align import Align
-from rich.padding import Padding
+from rich import box
+from rich.layout import Layout
 from rich.panel import Panel
 from textual.reactive import Reactive
 from textual.widget import Widget
@@ -13,12 +13,31 @@ class Console(Widget):
 
     mouse_over = Reactive(False)
     message = ""
-    console_log = []
+    console_log: list[str] = []
 
     def render(self) -> Panel:
-        display = self.console_log + [self.message]
+        # display = self.console_log + [self.message]
+
+        message_panel = Panel(
+            self.message,
+            border_style="white",
+            box=box.SQUARE,
+        )
+        console_panel = Panel(
+            "\n".join(self.console_log),
+            border_style="white",
+            box=box.SQUARE,
+        )
+
+        # display = Layout(Group(console_panel, message_panel))
+        display = Layout()
+        display.split_column(
+            Layout(console_panel, name="console", ratio=10),
+            Layout(message_panel, name="message"),
+        )
+
         return Panel(
-            Padding(Align.left("\n".join(display), vertical="middle")),
+            display,
             border_style="green" if self.mouse_over else "blue",
             title="Console",
         )
@@ -27,7 +46,8 @@ class Console(Widget):
         key = event.key
         match key:
             case "enter":
-                self.console_log.append(self.message)
+                if self.message:
+                    self.console_log.append(self.message)
                 self.message = ""
             case self.DELETE_KEY:
                 self.message = self.message[:-1]
