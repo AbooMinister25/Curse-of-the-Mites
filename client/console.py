@@ -1,8 +1,14 @@
 from rich import box
 from rich.layout import Layout
 from rich.panel import Panel
+from rich.text import Text
 from textual.reactive import Reactive
 from textual.widget import Widget
+from textual.widgets import ScrollView
+
+
+class OutConsole(ScrollView):
+    prev = Text("")
 
 
 class Console(Widget):
@@ -16,8 +22,6 @@ class Console(Widget):
     console_log: list[str] = []
 
     def render(self) -> Panel:
-        # display = self.console_log + [self.message]
-
         message_panel = Panel(
             self.message,
             border_style="white",
@@ -30,7 +34,6 @@ class Console(Widget):
             box=box.SQUARE,
         )
 
-        # display = Layout(Group(console_panel, message_panel))
         display = Layout()
         display.split_column(
             Layout(console_panel, name="console", ratio=2),
