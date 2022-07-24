@@ -1,4 +1,4 @@
-from server.game_components.rooms.basic_room import BaseRoom
+from basic_room import BaseRoom
 
 
 class Wall(BaseRoom):

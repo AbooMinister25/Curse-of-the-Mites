@@ -1,8 +1,8 @@
 import hashlib
 from abc import ABC  # abstract classes
 
-from server.game_components.entitiies.mob import Mob
-from server.game_components.entitiies.player import Player
+from server.game_components.entities.mob import Mob
+from server.game_components.entities.player import Player
 
 
 class BaseRoom(ABC):
