@@ -55,6 +55,9 @@ class Console(Widget):
             case _ if "ctrl" in key:
                 # Special keys (DEL, tab, etc.), are registered with a "ctrl" in front, we want to ignore them.
                 pass
+            case _ if key in {"up", "down", "right", "left"}:
+                # Arrow keys
+                pass
             case _:
                 self.message += key
 
