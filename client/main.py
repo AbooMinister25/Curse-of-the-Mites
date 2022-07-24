@@ -1,6 +1,8 @@
 from textual.app import App
 from textual.widgets import Placeholder
 
+from map import Map
+
 
 class GameInterface(App):
     """Simple textual app.
@@ -27,7 +29,7 @@ class GameInterface(App):
         )
 
         grid.place(
-            map_area=Placeholder(name="Map"),
+            map_area=Map(),
             entities_area=Placeholder(name="Entities in the map"),
             events_area=Placeholder(name="Console"),
             available_commands_area=Placeholder(name="Available Commands"),
