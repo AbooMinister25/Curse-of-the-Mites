@@ -1,4 +1,5 @@
 from console import Console
+from entities import Entities
 from map import Map
 from textual.app import App
 from textual.widgets import Placeholder
@@ -30,7 +31,7 @@ class GameInterface(App):
 
         grid.place(
             map_area=Map(),
-            entities_area=Placeholder(name="Entities in the map"),
+            entities_area=Entities(),
             events_area=Console(),
             available_commands_area=Placeholder(name="Available Commands"),
         )
