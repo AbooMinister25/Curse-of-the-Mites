@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import random
 import time
-from abc import ABC  # abstract classes
+from abc import ABC, abstractmethod  # abstract classes
 
 raw_map = [
     {"x": 0, "y": 0, "type": "wall"},
@@ -33,6 +33,7 @@ class Entity(ABC):
     in_combat: bool
     name: str
     allowed_actions: dict[str, Action]
+    in_room: BaseRoom | None
 
     def __init__(self, _name, _allowed_actions: list[str], _health=100, _mana=100):
         self.health = _health
@@ -40,13 +41,12 @@ class Entity(ABC):
         self.mana = _mana
         self.max_mana = _mana
         self.alive = True
-
         self.in_combat = False
         self.name = _name
         temp = {}
         for _action in _allowed_actions:
             temp[_action] = all_actions[_action]
-
+        self.in_room = None
         self.allowed_actions = temp
 
         now = time.time_ns()
@@ -55,11 +55,8 @@ class Entity(ABC):
         m.update(data.encode())
         self.uid = int(m.hexdigest(), 16)
 
-    def commit_action(self, _action: str, target: Entity | list[Entity]):
+    def commit_action(self, _action: str, target: Entity | None = None):
         return self.allowed_actions[_action].action(self, target)
-
-    def move(self, _direction: str, _map: list[BaseRoom]):
-        pass
 
     def __repr__(self):
         return str(self)
@@ -69,8 +66,15 @@ class Entity(ABC):
         moves = f"{[str(e) for e in self.allowed_actions.keys()]}"
         return f"{str(self.uid)[0:4]} {status} {self.__class__.__name__} {self.name} {moves}"
 
+    @abstractmethod
+    def update(self):
+        pass
+
 
 class Mob(Entity):
+    def update(self):
+        pass
+
     def __init__(self, _name, _allowed_actions: list[str]):
         super().__init__(_name, _allowed_actions)
 
@@ -82,6 +86,9 @@ class Player(Entity):
     def __init__(self, _name, _allowed_actions: list[str]):
         super().__init__(_name, _allowed_actions)
 
+    def update(self):
+        pass
+
 
 class Action(ABC):
     __cost: int
@@ -89,6 +96,8 @@ class Action(ABC):
     __max_damage: int
     __hit_percentage: int
     name: str
+    area_of_effect: bool
+    requires_target: bool
 
     def __init__(
         self,
@@ -97,6 +106,8 @@ class Action(ABC):
         _min_damage: int,
         _max_damage: int,
         _hit_percentage: int,
+        _area_of_effect: bool,
+        _requires_target: bool,
     ):
         """
         Make an action
@@ -106,6 +117,8 @@ class Action(ABC):
         :param _min_damage: minimal damage
         :param _max_damage: maximum damage
         :param _hit_percentage: how often should it hit
+        :param _area_of_effect: hits every entity in the room.
+        :param _requires_target: indicates if it needs to have a target
         """
         if _hit_percentage > 100 or _hit_percentage < 0:
             raise ValueError("hit % must be valid % (0-100) inclusive")
@@ -113,14 +126,17 @@ class Action(ABC):
             temp = _max_damage
             _max_damage = _min_damage
             _min_damage = temp
-
+        self.area_of_effect = _area_of_effect
+        self.requires_target = _requires_target
         self.__min_damage = _min_damage
         self.__max_damage = _max_damage
         self.__cost = _cost
         self.__hit_percentage = _hit_percentage
         self.name = _name
 
-    def action(self, caster: Entity, target: list[Entity] | Entity) -> list[dict]:
+    def action(self, _caster: Entity, _target: Entity | None) -> list[dict]:
+        if _target is None:
+            assert self.requires_target is False
         """
         Perform an action
 
@@ -141,29 +157,69 @@ class Action(ABC):
             target - the target uid
             the spell did cast but did not hit, it WOULD HAVE done 1000 dmg BUT DIDN'T
 
-        :param caster: the caster
-        :param target: the target(s)
+        :param _caster: the caster
+        :param _target: the target(s)
         :return: its a list of what happened. Single target attacks still return a list of dicts
         """
         hit = False
         cast = False
-        if caster.mana >= self.__cost:
-            caster.mana -= self.__cost
+        if _caster.mana >= self.__cost:
+            _caster.mana -= self.__cost
             cast = True
 
-        if isinstance(target, Entity):
+        if _target is None:
+            if self.area_of_effect:
+                action_list = []
+                targets = []
+                for mob in _caster.in_room.get_mobs():
+                    targets.append(mob)
+                for player in _caster.in_room.get_players():
+                    if player.uid != _caster.uid:
+                        targets.append(player)
+                for entity in targets:
+                    dmg = random.randint(self.__min_damage, self.__max_damage)
+                    if cast:
+                        hit_check = random.randint(0, 100)
+                        if hit_check <= self.__hit_percentage:
+                            hit = True
+                        if hit:
+                            entity.health -= dmg
+                        action_list.append(
+                            {
+                                "caster": _caster.uid,
+                                "target": entity.uid,
+                                "hit": hit,
+                                "dmg": dmg,
+                                "cast": cast,
+                            }
+                        )
+                    else:
+                        action_list.append(
+                            {
+                                "caster": _caster.uid,
+                                "target": entity.uid,
+                                "hit": hit,
+                                "dmg": dmg,
+                                "cast": cast,
+                            }
+                        )
+                return action_list
+            else:
+                _target = _caster
+
+        if isinstance(_target, Entity) and (not self.area_of_effect):
             dmg = random.randint(self.__min_damage, self.__max_damage)
             if cast:
                 hit_check = random.randint(0, 100)
                 if hit_check <= self.__hit_percentage:
                     hit = True
                 if hit:
-                    target.health -= dmg
+                    _target.health -= dmg
 
                 return [
                     {
-                        "caster": caster.uid,
-                        "target": target.uid,
+                        "caster": _caster.uid,
+                        "target": _target.uid,
                         "hit": hit,
                         "dmg": dmg,
                         "cast": cast,
@@ -172,50 +228,28 @@ class Action(ABC):
             else:
                 return [
                     {
-                        "caster": caster.uid,
-                        "target": target.uid,
+                        "caster": _caster.uid,
+                        "target": _target.uid,
                         "hit": hit,
                         "dmg": dmg,
                         "cast": cast,
                     }
                 ]
-        elif isinstance(target, list):
-            action_list = []
-            for entity in target:
-                dmg = random.randint(self.__min_damage, self.__max_damage)
-                if cast:
-                    hit_check = random.randint(0, 100)
-                    if hit_check <= self.__hit_percentage:
-                        hit = True
-                    if hit:
-                        entity.health -= dmg
-                    action_list.append(
-                        {
-                            "caster": caster.uid,
-                            "target": entity.uid,
-                            "hit": hit,
-                            "dmg": dmg,
-                            "cast": cast,
-                        }
-                    )
-                else:
-                    action_list.append(
-                        {
-                            "caster": caster.uid,
-                            "target": entity.uid,
-                            "hit": hit,
-                            "dmg": dmg,
-                            "cast": cast,
-                        }
-                    )
-            return action_list
 
 
 all_actions = {
-    "bite": Action("bite", 0, 5, 5, 100),
-    "stomp": Action("stomp", 10, 5, 15, 70),
-    "spit": Action("spit", 25, 15, 50, 30),
-    "eat_berry": Action("eat", 5, -5, -10, 100),
+    "bite": Action(
+        _name="bite",
+        _cost=0,
+        _min_damage=5,
+        _max_damage=5,
+        _hit_percentage=100,
+        _area_of_effect=False,
+        _requires_target=True,
+    ),
+    "stomp": Action("stomp", 10, 5, 15, 70, False, True),
+    "spit": Action("spit", 25, 15, 50, 30, True, False),
+    "eat_berry": Action("eat", 5, -5, -10, 100, False, False),
 }
 
 
@@ -301,6 +335,9 @@ class BaseRoom(ABC):
     def get_players(self) -> list[Player]:
         return self.__players
 
+    def get_mobs(self) -> list[Mob]:
+        return self.__mobs
+
     def add_player(self, _player: Player):
         """
         Add player to room
@@ -308,9 +345,11 @@ class BaseRoom(ABC):
         :param _player: player object to add
         :return:
         """
+        _player.in_room = self
         self.__players.append(_player)
 
     def remove_player(self, _player: Player):
+        _player.in_room = None
         self.__players.remove(_player)
 
     def add_mob(self, _mob: Mob):
@@ -320,7 +359,12 @@ class BaseRoom(ABC):
         :param _mob: mob object to add
         :return:
         """
+        _mob.in_room = self
         self.__mobs.append(_mob)
+
+    def remove_mob(self, _mob: Mob):
+        _mob.in_room = None
+        self.__mobs.remove(_mob)
 
     def get_map_location(self):
         return self.display_x, self.display_y
@@ -391,3 +435,99 @@ class Hall(BaseRoom):
             _display_y=_display_y,
         )
         self.can_entity_step = True
+
+
+class Combat:
+    participants: list[Entity]
+    participants_uids: set[int]
+    acted_this_round: list[Entity]
+    players: list[Player]
+    mobs: list[Mob]
+    done: bool
+    room: BaseRoom
+    uid: int
+
+    def __init__(self, _participants: list[Entity], _room: BaseRoom):
+        self.participants = _participants
+        self.participants_uids = set()
+        self.players = []
+        self.mobs = []
+        self.room = _room
+        self.done = False
+
+        for entity in self.participants:
+            self.participants_uids.add(entity.uid)
+            if isinstance(entity, Player):
+                self.players.append(entity)
+            if isinstance(entity, Mob):
+                self.mobs.append(entity)
+
+        combat_hash = hashlib.sha256()
+        data = f"{self.participants_uids}"
+        combat_hash.update(str(time.time_ns()).encode())
+        combat_hash.update(data.encode())
+        self.uid = int(combat_hash.hexdigest(), 16)
+
+    def remove_from_combat(self, entity: Entity):
+        self.participants_uids.remove(entity.uid)
+        self.participants.remove(entity)
+        if isinstance(entity, Player):
+            self.players.remove(entity)
+        if isinstance(entity, Mob):
+            self.mobs.remove(entity)
+
+    def __add_mob_to_combat(self, _mob: Mob):
+        if _mob.uid not in self.participants_uids:
+            self.participants_uids.add(_mob.uid)
+            self.participants.append(_mob)
+            self.mobs.append(_mob)
+
+    def __add_player_to_combat(self, _player: Player):
+        if _player.uid not in self.participants_uids:
+            self.participants_uids.add(_player.uid)
+            self.participants.append(_player)
+            self.players.append(_player)
+
+    def add_to_combat(self, _participants: list[Entity] | Entity):
+        if isinstance(_participants, Entity):
+            if isinstance(_participants, Player):
+                self.__add_player_to_combat(_participants)
+            if isinstance(_participants, Mob):
+                self.__add_mob_to_combat(_participants)
+
+        if isinstance(_participants, list):
+            for entity in _participants:
+                if isinstance(entity, Player):
+                    self.__add_player_to_combat(entity)
+                if isinstance(entity, Mob):
+                    self.__add_mob_to_combat(entity)
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        ret = ""
+        for player in self.players:
+            ret += f"P{str(player.uid)[:4]} "
+        for mob in self.mobs:
+            ret += f"M{str(mob.uid)[:4]} "
+        return ret
+
+    def combine(self, other: Combat) -> Combat | None:
+        combat_to_delete = None
+        if self.room.uid == other.room.uid:
+            if len(self.participants_uids.intersection(other.participants_uids)) != 0:
+                destroy = None
+                keep = None
+                if self.uid > other.uid:
+                    combat_to_delete = other
+                    keep = self
+                    destroy = other
+                if self.uid < other.uid:
+                    combat_to_delete = self
+                    keep = other
+                    destroy = self
+
+                keep.add_to_combat(destroy.participants)
+
+        return combat_to_delete
