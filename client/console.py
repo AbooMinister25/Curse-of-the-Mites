@@ -9,13 +9,20 @@ from textual.widget import Widget
 class ConsoleLog(Widget):
     console_log: list[str] = []
     full_log: list[str] = []
+    reverse_log: Reactive[bool] = Reactive(False)
 
     def render(self) -> Panel:
         if len(self.console_log) > 7:
             self.console_log.pop(0)
 
+        display_log = (
+            self.console_log
+            if not self.reverse_log
+            else list(reversed(self.console_log))
+        )
+
         return Panel(
-            "\n".join(self.console_log),
+            "\n".join(display_log),
             border_style="white",
             box=box.SQUARE,
         )
@@ -46,7 +53,7 @@ class Console(Widget):
 
         display = Layout()
         display.split_column(
-            Layout(self.out, name="console", ratio=2),
+            Layout(self.out, name="console", ratio=3),
             Layout(message_panel, name="message"),
         )
 
@@ -61,7 +68,8 @@ class Console(Widget):
         match key:
             case "enter":
                 if self.message:
-                    self.out.add_log(self.message)
+                    result = self.handle_message(self.message)
+                    self.out.add_log(result)
                     # self.console_log.append(self.message)
                 self.message = ""
             case self.DELETE_KEY:
@@ -82,3 +90,20 @@ class Console(Widget):
 
     def on_leave(self) -> None:
         self.mouse_over = False
+
+    def handle_message(self, message: str) -> str:
+        """Handles input from the user.
+
+        Takes the message that the user entered and decides if it's a valid command and how to handle it.
+        Returns the message that should be displayed in the log.
+        """
+        command = message.casefold()  # Let's have a case insensitive console :)
+
+        log_display = ""
+        if command == "/console_reverse":
+            self.out.reverse_log = not self.out.reverse_log
+            log_display = "Console output reversed."
+        else:
+            log_display = "Invalid command."
+
+        return log_display
