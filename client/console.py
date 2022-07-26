@@ -7,8 +7,14 @@ from textual.widget import Widget
 
 
 class ConsoleLog(Widget):
-    console_log: list[str] = []
-    full_log: list[str] = []
+    HELP_MESSAGE = "Type /help to view all available commands."
+
+    console_log: list[str] = [
+        HELP_MESSAGE,
+    ]
+    full_log: list[str] = [
+        HELP_MESSAGE,
+    ]
     reverse_log: Reactive[bool] = Reactive(False)
 
     def render(self) -> Panel:
@@ -38,6 +44,10 @@ class Console(Widget):
 
     # This is the key textual registers when you press the DEL button.
     DELETE_KEY = "ctrl+h"
+
+    ALL_COMMANDS = {
+        "/reverse_console": "Reverses the way console logs are displayed.",
+    }
 
     mouse_over = Reactive(False)
     message = ""
@@ -100,10 +110,22 @@ class Console(Widget):
         command = message.casefold()  # Let's have a case insensitive console :)
 
         log_display = ""
-        if command == "/console_reverse":
+        if command == "/help":
+            log_display = display_help(self.ALL_COMMANDS)
+        elif command == "/reverse_console":
             self.out.reverse_log = not self.out.reverse_log
             log_display = "Console output reversed."
         else:
             log_display = "Invalid command."
 
         return log_display
+
+
+def display_help(all_commands: dict) -> str:
+    """Returns a string with information about all available commands."""
+    ret = ""
+
+    for k, v in all_commands.items():
+        ret += f"{k}: {v}\n"
+
+    return ret
