@@ -87,7 +87,7 @@ class Console(Widget):
         match key:
             case "enter":
                 if self.message:
-                    result = self.handle_message(self.message)
+                    result = await self.handle_message(self.message)
                     if result:
                         self.out.add_log(result)
                     # self.console_log.append(self.message)
