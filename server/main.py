@@ -2,6 +2,7 @@ import asyncio
 import json
 
 import websockets
+from schemas import ChatEvent
 
 connections = set()
 
@@ -21,10 +22,8 @@ async def handler(websocket):
         print(event)  # TODO: remove this later.
         match event["type"]:
             case "chat":
-                response = json.dumps(
-                    {"type": "chat", "chat_message": event["chat_message"]}
-                )
-                websockets.broadcast(connections, response)
+                response = ChatEvent(type="chat", chat_message=event["chat_message"])
+                websockets.broadcast(connections, response.json())
 
 
 async def main():
