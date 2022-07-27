@@ -45,6 +45,10 @@ class GameInterface(WebsocketApp):
         while self.websocket.open:
             message = json.loads(await self.websocket.recv())
             match message["type"]:
+                case "init":
+                    username = "test"  # TODO: add functionality for setting usernames.
+                    res = {"type": "init", "data": username}
+                    await self.websocket.send(json.dumps(res))
                 case "chat":
                     self.console_widget.out.add_log(message["chat_message"])
                     self.console_widget.refresh()

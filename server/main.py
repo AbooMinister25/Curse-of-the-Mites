@@ -2,9 +2,14 @@ import asyncio
 import json
 
 import websockets
-from schemas import ChatEvent
+from websockets.exceptions import InvalidMessage
+
+from game_components.game import Game
+from game_components.game_objects import Player
+from schemas import ChatEvent, RequestEvent
 
 connections = set()
+game = Game()
 
 
 async def register(websocket):
@@ -17,6 +22,19 @@ async def register(websocket):
 
 
 async def handler(websocket):
+    init = RequestEvent(type="init", data="Provide a username")
+    await websocket.send(init.json())
+
+    message = await websocket.recv()
+    event = RequestEvent.parse_obj(json.loads(message))
+
+    if event.type != "init":
+        raise InvalidMessage("Expected an `init` message.")
+
+    username = event.data
+    player = Player(username, ["spit", "bite"])
+    game.add_player(player, 1, 1)
+
     async for message in websocket:
         event = json.loads(message)
         print(event)  # TODO: remove this later.

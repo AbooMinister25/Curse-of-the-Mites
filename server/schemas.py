@@ -11,3 +11,10 @@ class ChatEvent(Event):
 
     type: Literal["chat"]
     chat_message: str
+
+
+class RequestEvent(BaseModel):
+    """Sent by either the server or client to ask for some information"""
+
+    type: Literal["init"]
+    data: str
