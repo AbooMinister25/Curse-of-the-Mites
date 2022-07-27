@@ -47,6 +47,7 @@ class GameInterface(WebsocketApp):
             match message["type"]:
                 case "chat":
                     self.console_widget.out.add_log(message["chat_message"])
+                    self.console_widget.refresh()
 
 
 GameInterface.run(log="textual.log")
