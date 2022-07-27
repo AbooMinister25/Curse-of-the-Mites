@@ -1,9 +1,12 @@
+import json
+
 from rich import box
 from rich.layout import Layout
 from rich.panel import Panel
 from textual import events
 from textual.reactive import Reactive
 from textual.widget import Widget
+from websockets.legacy.client import WebSocketClientProtocol
 
 
 class ConsoleLog(Widget):
@@ -37,6 +40,12 @@ class Console(Widget):
     console_log: list[str] = []
     out: ConsoleLog = ConsoleLog()
 
+    def __init__(
+        self, websocket: WebSocketClientProtocol, name: str | None = None
+    ) -> None:
+        self.websocket = websocket
+        super().__init__(name)
+
     def render(self) -> Panel:
         message_panel = Panel(
             self.message,
@@ -56,12 +65,17 @@ class Console(Widget):
             title="Console",
         )
 
-    def on_key(self, event: events.Key):
+    async def on_key(self, event: events.Key):
         key = event.key
         match key:
             case "enter":
                 if self.message:
-                    self.out.add_log(self.message)
+                    # TODO: Change this once PR 15 is merged.
+                    response = json.dumps(
+                        {"type": "chat", "chat_message": self.message}
+                    )
+                    await self.websocket.send(response)
+                    # self.out.add_log(self.message)
                     # self.console_log.append(self.message)
                 self.message = ""
             case self.DELETE_KEY:

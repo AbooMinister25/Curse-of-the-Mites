@@ -5,6 +5,7 @@ import websockets
 from rich.console import Console
 from textual.app import App
 from textual.driver import Driver
+from websockets.legacy.client import WebSocketClientProtocol
 
 
 class WebsocketApp(App):
@@ -17,7 +18,7 @@ class WebsocketApp(App):
         log: str = "",
         log_verbosity: int = 1,
         title: str = "Textual Application",
-        websocket=None,
+        websocket: WebSocketClientProtocol = None,
     ):
         self.websocket = websocket
         super().__init__(screen, driver_class, log, log_verbosity, title)
