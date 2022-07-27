@@ -50,4 +50,7 @@ class GameInterface(WebsocketApp):
                     self.console_widget.refresh()
 
 
-GameInterface.run(log="textual.log")
+try:
+    GameInterface.run(log="textual.log")
+except ConnectionRefusedError:
+    print("Make sure there's a server running before trying to run the client.")
