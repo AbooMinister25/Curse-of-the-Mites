@@ -10,7 +10,7 @@ from websockets.legacy.client import WebSocketClientProtocol
 
 
 class ConsoleLog(Widget):
-    HELP_MESSAGE = "Type /help to view all available commands. Use up/down keys to navigate the logs."
+    HELP_MESSAGE = "Type `/help` to view all available commands. Use up/down keys to navigate the logs."
 
     console_log: list[str] = [
         HELP_MESSAGE,
@@ -157,17 +157,20 @@ class Console(Widget):
         command = message.casefold()  # Let's have a case insensitive console :)
 
         log_display = ""
-        if command == "/help":
-            log_display = display_help(self.ALL_COMMANDS)
-        elif command == "/reverse_console":
-            self.out.reverse_log = not self.out.reverse_log
-            log_display = "Console output reversed."
-        elif command[0] != "/":
-            # Treat commands without a leading slash as "chat" commands.
-            response = json.dumps({"type": "chat", "chat_message": self.message})
-            await self.websocket.send(response)
-        else:
-            log_display = f"Invalid command. {self.out.HELP_MESSAGE}"
+
+        match command.split():
+            case ["/help"]:
+                log_display = display_help(self.ALL_COMMANDS)
+            case ["/reverse_console"]:
+                self.out.reverse_log = not self.out.reverse_log
+                log_display = "Console output reversed."
+            case _ if command[0] == "/":
+                log_display = f"Invalid command. {self.out.HELP_MESSAGE}"
+            case _:
+                # Treat commands without a leading slash as "chat" commands.
+                response = json.dumps({"type": "chat", "chat_message": self.message})
+                await self.websocket.send(response)
+
         return log_display
 
 
