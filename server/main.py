@@ -64,10 +64,7 @@ async def game_loop():
 
 
 async def main():
-    websockets_task = asyncio.create_task(websocket_handling())
-    game_loop_task = asyncio.create_task(game_loop())
-    await websockets_task
-    await game_loop_task
+    await asyncio.gather(websocket_handling(), game_loop())
 
 
 asyncio.run(main())
