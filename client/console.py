@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Optional
+import typing
 
 from rich import box
 from rich.layout import Layout
@@ -9,7 +9,9 @@ from rich.panel import Panel
 from textual import events
 from textual.reactive import Reactive
 from textual.widget import Widget
-from websockets.legacy.client import WebSocketClientProtocol
+
+if typing.TYPE_CHECKING:
+    from main import GameInterface
 
 
 class ConsoleLog(Widget):
@@ -85,12 +87,9 @@ class Console(Widget):
     out: ConsoleLog = ConsoleLog()
 
     initialized: bool = False
-    name: Optional[str] = None
 
-    def __init__(
-        self, websocket: WebSocketClientProtocol, name: str | None = None
-    ) -> None:
-        self.websocket = websocket
+    def __init__(self, main_app: GameInterface, name: str | None = None) -> None:
+        self.main_app = main_app
         super().__init__(name)
 
     def render(self) -> Panel:
@@ -117,7 +116,7 @@ class Console(Widget):
         match key:
             case "enter":
                 if self.message:
-                    result = await self.handle_message(self.message)
+                    result = await self.handle_message()
                     if result:
                         self.out.add_log(result)
                     # self.console_log.append(self.message)
@@ -153,7 +152,7 @@ class Console(Widget):
     def on_leave(self) -> None:
         self.mouse_over = False
 
-    async def handle_message(self, message: str) -> str:
+    async def handle_message(self) -> str:
         """Handles input from the user.
 
         Takes the message that the user entered and decides if it's a valid command and how to handle it.
@@ -161,7 +160,7 @@ class Console(Widget):
         """
         log_display = ""
 
-        match message.split():
+        match self.message.split():
             case ["/help"]:
                 log_display = display_help(self.ALL_COMMANDS)
             case ["/reverse_console"]:
@@ -169,7 +168,7 @@ class Console(Widget):
                 log_display = "Console output reversed."
             case ["/register", username]:
                 log_display = await self.register(username)
-            case _ if message[0] == "/":
+            case _ if self.message[0] == "/":
                 log_display = f"Invalid command. {self.out.HELP_MESSAGE}"
             case _:
                 # Treat commands without a leading slash as "chat" commands.
@@ -180,7 +179,7 @@ class Console(Widget):
     async def register(self, username: str) -> str:
         """Sends an init request to the server to initialize our player."""
         request = {"type": "init", "data": username}
-        await self.websocket.send(json.dumps(request))
+        await self.main_app.websocket.send(json.dumps(request))
         self.initialized = True
 
         return ""
@@ -200,9 +199,13 @@ class Console(Widget):
     @enforce_initialization
     async def send_chat_message(self) -> str:
         response = json.dumps(
-            {"type": "chat", "player_name": self.name, "chat_message": self.message}
+            {
+                "type": "chat",
+                "player_name": self.main_app.name,
+                "chat_message": self.message,
+            }
         )
-        await self.websocket.send(response)
+        await self.main_app.websocket.send(response)
         return ""
 
 

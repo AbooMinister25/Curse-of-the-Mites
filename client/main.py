@@ -34,7 +34,7 @@ class GameInterface(WebsocketApp):
             available_commands_area="right,bottom",
         )
 
-        self.console_widget = Console(websocket=self.websocket, name="Console")
+        self.console_widget = Console(main_app=self, name="Console")
 
         grid.place(
             map_area=Map(),
