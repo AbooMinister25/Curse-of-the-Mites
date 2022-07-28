@@ -49,10 +49,7 @@ class WebsocketApp(App):
                     screen=screen, driver_class=driver, websocket=websocket, **kwargs
                 )
 
-                # Creating asyncio tasks allows our TUI and our message receiving to happen concurrently.
-                app_task = asyncio.create_task(app.process_messages())
-                message_handler_task = asyncio.create_task(app.handle_messages())
-                await app_task
-                await message_handler_task
+                # Using gather allows our TUI and our message receiving to happen concurrently.
+                await asyncio.gather(app.process_messages(), app.handle_messages())
 
         asyncio.run(run_app())

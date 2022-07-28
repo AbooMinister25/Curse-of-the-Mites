@@ -1,3 +1,5 @@
+import time
+
 from game_components.game_objects import (
     BaseRoom,
     Combat,
@@ -14,6 +16,7 @@ class Game:
     mobs: list[Mob]
     rooms: list[BaseRoom]
     combats: list[Combat]
+    start_time: int
 
     def __init__(self):
         self.players = []
@@ -21,6 +24,7 @@ class Game:
         self.rooms = []
         self.combats = []
         self.build_map()
+        self.start_time = round(time.time() * 1000)
 
     def get_room_at(self, x, y) -> BaseRoom | None:
         temp = None
@@ -118,7 +122,8 @@ class Game:
             return False
 
     def move_player(self, _player: Player | int, direction: str) -> bool:
-        assert direction in ("north", "east", "west", "south")
+        if direction not in ("north", "east", "west", "south"):
+            return False
         player_moved = False
         if isinstance(_player, int):
             for player in self.players:
@@ -169,6 +174,12 @@ class Game:
                     break
             else:
                 reduce_combats_done = True
+
+        for room in self.rooms:
+            for player in room.get_players():
+                actions = player.update()
+                # this wont work at all.
+                set([action for action in actions])
 
 
 if __name__ == "__main__":

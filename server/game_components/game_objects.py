@@ -68,11 +68,18 @@ class Entity(ABC):
 
     @abstractmethod
     def update(self):
+        if self.mana > self.max_mana:
+            self.mana = self.max_mana
+        if self.health > self.max_health:
+            self.health = self.max_health
         pass
 
 
 class Mob(Entity):
     def update(self):
+        self.mana += 7
+        self.health += random.randint(1, 3)
+        super().update()
         pass
 
     def __init__(self, _name, _allowed_actions: list[str]):
@@ -80,14 +87,79 @@ class Mob(Entity):
 
 
 class Player(Entity):
-    experience: int
     level: int
+    command_queue: list[dict[str, int | None]]
 
     def __init__(self, _name, _allowed_actions: list[str]):
         super().__init__(_name, _allowed_actions)
+        self.level = 0
+        self.command_queue = []
 
-    def update(self):
-        pass
+    def update(self) -> list[dict] | None:
+        directions = ["north", "east", "south", "west"]
+        self.mana += 10
+        self.health += random.randint(1, 5)
+
+        commands = []
+        while len(self.command_queue) > 0:
+            next_command = self.command_queue.pop()
+            if self.in_combat:
+                if next_command["command"] not in directions:
+                    commands.append(next_command)
+            if not self.in_combat:
+                # this is wrong too
+                pass
+            if next_command["command"] not in directions:
+                break
+
+        super().update()
+        if len(commands) > 0:
+            return commands
+        return None
+
+    def send_events_to_player(self):
+        for event in self.events:
+            # SEND EVENTS TO THE PLAYER
+            pass
+
+    def add_command_to_queue(self, _command: str, _target: int | None = None) -> bool:
+        """
+        Dammit this is wrong.
+
+        :param _command: flee, north, east, south, west, one of the skills, clear, nvm
+        :param _target: int of entity or list of integers or None
+        :return:
+        """
+        valid_commands = [str(e) for e in self.allowed_actions.keys()] + ["flee"]
+        directions = ["north", "east", "south", "west"]
+        queue_commands = ["clear", "nvm"]
+        valid_commands += directions + queue_commands
+        if _command not in valid_commands:
+            # Give me junk ill give you junk
+            return False
+        if _command in self.allowed_actions.keys():
+            # make sure actions that need a target get a target
+            if self.allowed_actions[_command].requires_target and _target is None:
+                return False
+        if _command == "flee":
+            # you tried to flee but you aren't in combat. idiot.
+            if not self.in_combat:
+                return False
+        if _command in directions:
+            # you tried to move but you are in combat. STOP.
+            if self.in_combat:
+                return False
+        match _command:
+            case "clear":
+                self.command_queue = []
+                return True
+            case "nvm":
+                self.command_queue = self.command_queue[:-1]
+                return True
+            case _:
+                event = {"command": _command, "target": _target}
+                self.command_queue.append(event)
+                return True
 
 
 class Action(ABC):
@@ -108,10 +180,12 @@ class Action(ABC):
         _hit_percentage: int,
         _area_of_effect: bool,
         _requires_target: bool,
+        _causes_combat: bool,
     ):
         """
         Make an action
 
+        :param _causes_combat: does this effect cause combat
         :param _name: name of action
         :param _cost: cost in mana
         :param _min_damage: minimal damage
@@ -246,14 +320,16 @@ all_actions = {
         _hit_percentage=100,
         _area_of_effect=False,
         _requires_target=True,
+        _causes_combat=True,
     ),
-    "stomp": Action("stomp", 10, 5, 15, 70, False, True),
-    "spit": Action("spit", 25, 15, 50, 30, True, False),
-    "eat_berry": Action("eat", 5, -5, -10, 100, False, False),
+    "stomp": Action("stomp", 15, 5, 15, 70, False, True, True),
+    "spit": Action("spit", 25, 15, 50, 30, True, False, True),
+    "eat_berry": Action("eat", 5, -5, -10, 100, False, False, False),
 }
 
 
 class BaseRoom(ABC):
+    events: list[dict]
     __title: str
     __description: str
     __linked_rooms: dict[str, BaseRoom | None]
@@ -296,6 +372,7 @@ class BaseRoom(ABC):
         self.uid = int(m.hexdigest(), 16)
         self.__title = _title
         self.__color = _color
+        self.events = []
         self.__linked_rooms = _linked_rooms
         self.__display_char = _display_char
         self.__mobs = []
@@ -308,6 +385,51 @@ class BaseRoom(ABC):
     def get_display(self) -> dict:
         """:return: dictionary of `color` and `display_char` for building map"""
         return {"color": self.__color, "display_char": self.__display_char}
+
+    def export(self) -> dict:
+        _mobs = []
+        for mob in self.__mobs:
+            _mobs.append(
+                {
+                    "uid": mob.uid,
+                    "name": mob.name,
+                    "health": mob.health,
+                    "max_health": mob.max_health,
+                }
+            )
+        _players = []
+        for player in self.__players:
+            _players.append(
+                {
+                    "uid": player.uid,
+                    "name": player.name,
+                    "health": player.health,
+                    "max_health": player.max_health,
+                }
+            )
+        _exits = []
+        for _dir, room in self.__linked_rooms.items():
+            if room is not None:
+                _exits.append(
+                    {
+                        "direction": _dir,
+                        "title": room.__title,
+                        "uid": room.uid,
+                        "can_entity_step": room.can_entity_step,
+                    }
+                )
+        return {
+            "uid": self.uid,
+            "color": self.__color,
+            "display_char": self.__display_char,
+            "x": self.display_x,
+            "y": self.display_y,
+            "title": self.__title,
+            "description": self.__description,
+            "mobs": _mobs,
+            "players": _players,
+            "exits": _exits,
+        }
 
     def set_links(self, links: dict):
         self.__linked_rooms = links
