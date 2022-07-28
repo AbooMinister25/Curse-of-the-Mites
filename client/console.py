@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from typing import Optional
 
 from rich import box
 from rich.layout import Layout
@@ -84,6 +85,7 @@ class Console(Widget):
     out: ConsoleLog = ConsoleLog()
 
     initialized: bool = False
+    name: Optional[str] = None
 
     def __init__(
         self, websocket: WebSocketClientProtocol, name: str | None = None
@@ -197,7 +199,9 @@ class Console(Widget):
 
     @enforce_initialization
     async def send_chat_message(self) -> str:
-        response = json.dumps({"type": "chat", "chat_message": self.message})
+        response = json.dumps(
+            {"type": "chat", "player_name": self.name, "chat_message": self.message}
+        )
         await self.websocket.send(response)
         return ""
 

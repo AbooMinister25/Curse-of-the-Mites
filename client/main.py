@@ -49,10 +49,13 @@ class GameInterface(WebsocketApp):
             message = json.loads(await self.websocket.recv())
             match message["type"]:
                 case "chat":
-                    self.console_widget.out.add_log(message["chat_message"])
+                    self.console_widget.out.add_log(
+                        f"{message['player_name']}: {message['chat_message']}"
+                    )
                     self.console_widget.refresh()
                 case "registration_successful":
                     self.name = message["data"]["name"]
+                    self.console_widget.name = self.name
                     self.console_widget.out.add_log(
                         f"Correctly registerd as {self.name}"
                     )

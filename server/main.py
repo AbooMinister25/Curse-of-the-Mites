@@ -47,9 +47,15 @@ async def handler(websocket):
     async for message in websocket:
         event = json.loads(message)
         print(event)  # TODO: remove this later.
-        match event["type"]:
-            case "chat":
-                response = ChatEvent(type="chat", chat_message=event["chat_message"])
+        match event:
+            case {
+                "type": "chat",
+                "player_name": player_name,
+                "chat_message": chat_message,
+            }:
+                response = ChatEvent(
+                    type="chat", player_name=player_name, chat_message=chat_message
+                )
                 websockets.broadcast(connections.values(), response.json())
 
 
