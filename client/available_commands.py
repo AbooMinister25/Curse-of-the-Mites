@@ -26,9 +26,7 @@ class AvailableCommands(Widget):
 
     def render(self) -> Panel:
         return Panel(
-            Padding(
-                Align.center("\n".join(self.available_commands), vertical="middle")
-            ),
+            Padding(Align.left("\n".join(self.available_commands))),
             border_style="green" if self.mouse_over else "blue",
             title="Allowed Moves",
         )
