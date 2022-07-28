@@ -78,6 +78,7 @@ class Console(Widget):
     DELETE_KEY = "ctrl+h"
 
     ALL_COMMANDS = {
+        "/register [USERNAME]": "Use this command to set your username and join the game.",
         "/reverse_console": "Reverses the way console logs are displayed.",
     }
 
