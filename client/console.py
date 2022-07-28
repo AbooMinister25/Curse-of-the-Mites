@@ -87,8 +87,6 @@ class Console(Widget):
     console_log: list[str] = []
     out: ConsoleLog = ConsoleLog()
 
-    initialized: bool = False
-
     def __init__(self, main_app: GameInterface, name: str | None = None) -> None:
         self.main_app = main_app
         super().__init__(name)
@@ -179,7 +177,7 @@ class Console(Widget):
 
     async def register(self, username: str) -> str:
         """Sends an init request to the server to initialize our player."""
-        request = {"type": "init", "data": username}
+        request = {"type": "init", "username": username}
         await self.main_app.websocket.send(json.dumps(request))
         self.initialized = True
 
@@ -190,7 +188,7 @@ class Console(Widget):
         """Simple wrapper that makes sure the player is registered before doing certain actions."""
 
         async def wrapper(self: Console, *args, **kwargs) -> str:
-            if self.initialized:
+            if self.main_app.initialized:
                 return await func(self, *args, **kwargs)
             else:
                 return "You must register before doing this action."

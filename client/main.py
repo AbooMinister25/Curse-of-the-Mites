@@ -1,20 +1,19 @@
 import json
 from typing import Optional
 
+from available_commands import AvailableCommands
 from console import Console
 from entities import Entities
 from map import Map
-from textual.widgets import Placeholder
 from websocket_app import WebsocketApp
 
 
 class GameInterface(WebsocketApp):
-    """Simple textual app.
-
-    Just placeholders to be replaced once we get the client going.
-    """
+    """Textual MUD client"""
 
     name: Optional[str] = None
+    uid: Optional[int] = None
+    initialized: bool = False
 
     async def on_mount(self) -> None:
         grid = await self.view.dock_grid(edge="left", name="left")
@@ -35,12 +34,15 @@ class GameInterface(WebsocketApp):
         )
 
         self.console_widget = Console(main_app=self, name="Console")
+        self.available_commands_widget = AvailableCommands(
+            main_app=self, name="Available Commands"
+        )
 
         grid.place(
             map_area=Map(),
             entities_area=Entities(),
             events_area=self.console_widget,
-            available_commands_area=Placeholder(name="Available Commands"),
+            available_commands_area=self.available_commands_widget,
         )
 
     async def handle_messages(self):
@@ -54,10 +56,15 @@ class GameInterface(WebsocketApp):
                     )
                     self.console_widget.refresh()
                 case "registration_successful":
-                    self.name = message["data"]["name"]
+                    self.initialized = True
+                    self.name = message["player"]["name"]
+                    self.uid = message["player"]["uid"]
+                    self.available_commands_widget.add_commands(
+                        message["player"]["allowed_actions"]
+                    )
                     self.console_widget.name = self.name
                     self.console_widget.out.add_log(
-                        f"Correctly registerd as {self.name}"
+                        f"Correctly registered as {self.name}"
                     )
                     self.console_widget.refresh()
 
