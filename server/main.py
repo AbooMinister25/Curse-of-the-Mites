@@ -39,7 +39,7 @@ async def register(websocket):
     try:
         await handler(websocket)
     finally:
-        connections.remove(websocket)
+        del connections[registered_player.uid]
 
 
 async def handler(websocket):
