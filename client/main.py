@@ -1,3 +1,5 @@
+import json
+
 from console import Console
 from entities import Entities
 from map import Map
@@ -29,9 +31,7 @@ class GameInterface(WebsocketApp):
             available_commands_area="right,bottom",
         )
 
-        self.console_widget = Console()
-        # Testing websocket handling with websocket app.
-        await self.websocket.send("Hello world!")
+        self.console_widget = Console(websocket=self.websocket, name="Console")
 
         grid.place(
             map_area=Map(),
@@ -42,10 +42,16 @@ class GameInterface(WebsocketApp):
 
     async def handle_messages(self):
         """Allows receiving messages from a websocket and handling them."""
-        message = await self.websocket.recv()
-        match message:
-            case _:
-                self.console_widget.out.add_log(message)
+        while self.websocket.open:
+            message = json.loads(await self.websocket.recv())
+            match message["type"]:
+                case "init":
+                    username = "test"  # TODO: add functionality for setting usernames.
+                    res = {"type": "init", "data": username}
+                    await self.websocket.send(json.dumps(res))
+                case "chat":
+                    self.console_widget.out.add_log(message["chat_message"])
+                    self.console_widget.refresh()
 
 
 try:

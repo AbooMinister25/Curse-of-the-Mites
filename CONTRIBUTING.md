@@ -8,6 +8,12 @@ Requirements:
 
 ## Backend
 
+Switch to `server` directory.
+
+```shell
+cd server
+```
+
 Install dependencies.
 
 ```shell
@@ -23,23 +29,31 @@ poetry run pre-commit install
 Run server
 
 ```shell
-poetry run uvicorn main:app --reload  # Development
-
-poetry run uvicorn main:app --host 0.0.0.0 --port 80  # Deployment
+poetry run python3 main.py
 ```
 
-## Frontend
+## Client
+
+Switch to `client` directory.
+
+```shell
+cd client
+```
 
 Install dependencies.
 
 ```shell
-npm install
+poetry install
 ```
 
-Build the project.
+Install pre-commit. This will run checks on your code every time you try to commit.
 
 ```shell
-npm run build
+poetry run pre-commit install
 ```
 
-Alternatively you can run `npm run dev` which will automatically build.
+Run the client
+
+```shell
+poetry run python3 main.py
+```

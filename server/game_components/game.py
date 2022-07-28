@@ -1,4 +1,12 @@
-from game_objects import BaseRoom, Combat, Hall, Mob, Player, Wall, raw_map
+from game_components.game_objects import (
+    BaseRoom,
+    Combat,
+    Hall,
+    Mob,
+    Player,
+    Wall,
+    raw_map,
+)
 
 
 class Game:

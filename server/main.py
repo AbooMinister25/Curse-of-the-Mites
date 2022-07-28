@@ -1,30 +1,57 @@
-from pathlib import Path
+import asyncio
+import json
 
-from fastapi import FastAPI, WebSocket
-from fastapi.responses import RedirectResponse
-from fastapi.staticfiles import StaticFiles
+import websockets
+from game_components.game import Game
+from game_components.game_objects import Player
+from schemas import ChatEvent, RequestEvent
+from websockets.exceptions import InvalidMessage
 
-SCRIPT = Path(__file__)
-PUBLIC_DIR = (SCRIPT / "../../public").resolve()
-
-app = FastAPI()
-
-app.mount("/static", StaticFiles(directory=PUBLIC_DIR, html=True))
-
-
-# small little redirect
-@app.get("/")
-async def index() -> RedirectResponse:
-    """Redirect people from the index page to the real (static) index page."""
-    return RedirectResponse("/static/")
+connections = set()
+game = Game()
 
 
-@app.websocket("/ws")
-async def websocket(websocket: WebSocket) -> None:
-    """Set up a websocket connection.
+async def initialize_player(connection):
+    """Initializes a player in the game"""
+    init = RequestEvent(type="init", data="Provide a username")
+    await connection.send(init.json())
 
-    This will be the main websocket connection we will use.
-    """
-    await websocket.accept()
-    await websocket.send_text("Hello, world!")
-    await websocket.close()
+    message = await connection.recv()
+    event = RequestEvent.parse_obj(json.loads(message))
+
+    if event.type != "init":
+        raise InvalidMessage("Expected an `init` message.")
+
+    username = event.data
+    print(message)
+    player = Player(username, ["spit", "bite"])
+    game.add_player(player, 1, 1)
+
+
+async def register(websocket):
+    """Adds a player's connections to connections and removes them when they disconnect."""
+    await initialize_player(websocket)
+    connections.add(websocket)
+
+    try:
+        await handler(websocket)
+    finally:
+        connections.remove(websocket)
+
+
+async def handler(websocket):
+    async for message in websocket:
+        event = json.loads(message)
+        print(event)  # TODO: remove this later.
+        match event["type"]:
+            case "chat":
+                response = ChatEvent(type="chat", chat_message=event["chat_message"])
+                websockets.broadcast(connections, response.json())
+
+
+async def main():
+    async with websockets.serve(register, "localhost", 8765):
+        await asyncio.Future()  # run forever
+
+
+asyncio.run(main())
