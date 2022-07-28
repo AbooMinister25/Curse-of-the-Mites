@@ -15,9 +15,6 @@ game = Game()
 
 async def initialize_player(connection) -> Player:
     """Initializes a player in the game, and returns the initialized player."""
-    init = RequestEvent(type="init", data="Provide a username")
-    await connection.send(init.json())
-
     message = await connection.recv()
     event = RequestEvent.parse_obj(json.loads(message))
 

@@ -11,13 +11,12 @@ from websockets.legacy.client import WebSocketClientProtocol
 
 class ConsoleLog(Widget):
     HELP_MESSAGE = "Type `/help` to view all available commands. Use up/down keys to navigate the logs."
+    REGISTER_MESSAGE = (
+        "Type `/register [USERNAME]` to enter the game with your username."
+    )
 
-    console_log: list[str] = [
-        HELP_MESSAGE,
-    ]
-    full_log: list[str] = [
-        HELP_MESSAGE,
-    ]
+    console_log: list[str] = [HELP_MESSAGE, REGISTER_MESSAGE]
+    full_log: list[str] = [HELP_MESSAGE, REGISTER_MESSAGE]
     reverse_log: Reactive[bool] = Reactive(False)
     scroll: Reactive[int] = Reactive(0)
 
@@ -154,17 +153,17 @@ class Console(Widget):
         Takes the message that the user entered and decides if it's a valid command and how to handle it.
         Returns the message that should be displayed in the log.
         """
-        command = message.casefold()  # Let's have a case insensitive console :)
-
         log_display = ""
 
-        match command.split():
+        match message.split():
             case ["/help"]:
                 log_display = display_help(self.ALL_COMMANDS)
             case ["/reverse_console"]:
                 self.out.reverse_log = not self.out.reverse_log
                 log_display = "Console output reversed."
-            case _ if command[0] == "/":
+            case ["/register", username]:
+                log_display = await self.register(username)
+            case _ if message[0] == "/":
                 log_display = f"Invalid command. {self.out.HELP_MESSAGE}"
             case _:
                 # Treat commands without a leading slash as "chat" commands.
@@ -172,6 +171,32 @@ class Console(Widget):
                 await self.websocket.send(response)
 
         return log_display
+
+    async def register(self, username: str) -> str:
+        """Sends an init request to the server to initialize our player."""
+        request = {"type": "init", "data": username}
+        await self.websocket.send(json.dumps(request))
+        self.initialized = True
+
+        return f"Registered as {username}"
+
+    @staticmethod
+    def enforce_initialization(func):
+        """Simple wrapper that makes sure the player is registered before doing certain actions."""
+
+        async def wrapper(self: Console, *args, **kwargs) -> str:
+            if self.initialized:
+                return await func(self, *args, **kwargs)
+            else:
+                return "You must register before doing this action."
+
+        return wrapper
+
+    @enforce_initialization
+    async def send_chat_message(self) -> str:
+        response = json.dumps({"type": "chat", "chat_message": self.message})
+        await self.websocket.send(response)
+        return ""
 
 
 def display_help(all_commands: dict) -> str:
