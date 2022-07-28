@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 
 from rich import box
@@ -80,6 +82,8 @@ class Console(Widget):
     message = ""
     console_log: list[str] = []
     out: ConsoleLog = ConsoleLog()
+
+    initialized: bool = False
 
     def __init__(
         self, websocket: WebSocketClientProtocol, name: str | None = None
@@ -167,8 +171,7 @@ class Console(Widget):
                 log_display = f"Invalid command. {self.out.HELP_MESSAGE}"
             case _:
                 # Treat commands without a leading slash as "chat" commands.
-                response = json.dumps({"type": "chat", "chat_message": self.message})
-                await self.websocket.send(response)
+                log_display = await self.send_chat_message()
 
         return log_display
 
