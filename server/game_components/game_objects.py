@@ -322,9 +322,9 @@ all_actions = {
         _requires_target=True,
         _causes_combat=True,
     ),
-    "stomp": Action("stomp", 15, 5, 15, 70, False, True),
-    "spit": Action("spit", 25, 15, 50, 30, True, False),
-    "eat_berry": Action("eat", 5, -5, -10, 100, False, False),
+    "stomp": Action("stomp", 15, 5, 15, 70, False, True, True),
+    "spit": Action("spit", 25, 15, 50, 30, True, False, True),
+    "eat_berry": Action("eat", 5, -5, -10, 100, False, False, False),
 }
 
 
