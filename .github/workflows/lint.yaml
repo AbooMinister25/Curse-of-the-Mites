@@ -14,7 +14,7 @@ on:
 concurrency: lint-${{ github.sha }}
 
 jobs:
-  lint-py:
+  lint:
     runs-on: ubuntu-latest
 
     env:
@@ -34,23 +34,3 @@ jobs:
 
       - name: Run pre-commit hooks
         uses: pre-commit/action@v3.0.0
-
-  lint-js:
-    runs-on: ubuntu-latest
-
-    env:
-      NODE_VERSION: "16"
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up NodeJS ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install dependencies
-        run: cd web/ && npm ci
-
-      - name: Check code
-        run: cd web && npm run lint
