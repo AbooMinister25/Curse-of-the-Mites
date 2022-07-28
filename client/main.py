@@ -3,6 +3,7 @@ from typing import Optional
 
 from console import Console
 from entities import Entities
+from available_commands import AvailableCommands
 from map import Map
 from textual.widgets import Placeholder
 from websocket_app import WebsocketApp
@@ -35,12 +36,15 @@ class GameInterface(WebsocketApp):
         )
 
         self.console_widget = Console(main_app=self, name="Console")
+        self.available_commands_widget = AvailableCommands(
+            main_app=self, name="Available Commands"
+        )
 
         grid.place(
             map_area=Map(),
             entities_area=Entities(),
             events_area=self.console_widget,
-            available_commands_area=Placeholder(name="Available Commands"),
+            available_commands_area=self.available_commands_widget,
         )
 
     async def handle_messages(self):
