@@ -4,7 +4,7 @@ import json
 import websockets
 from game_components.game import Game
 from game_components.game_objects import Player
-from schemas import ChatEvent, RequestEvent
+from schemas import ChatEvent, RegistrationSuccess, RequestEvent
 from websockets.exceptions import InvalidMessage
 
 TIME_BETWEEN_ROUNDS = 10  # Seconds between each round.
@@ -31,6 +31,10 @@ async def initialize_player(connection) -> Player:
 async def register(websocket):
     """Adds a player's connections to connections and removes them when they disconnect."""
     registered_player = await initialize_player(websocket)
+
+    registration_response = RegistrationSuccess(registered_player)
+    await websocket.send(registration_response.json())
+
     connections[registered_player.uid] = websocket
 
     try:

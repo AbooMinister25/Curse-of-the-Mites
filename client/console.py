@@ -181,7 +181,7 @@ class Console(Widget):
         await self.websocket.send(json.dumps(request))
         self.initialized = True
 
-        return f"Registered as {username}"
+        return ""
 
     @staticmethod
     def enforce_initialization(func):

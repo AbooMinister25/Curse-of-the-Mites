@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 from console import Console
 from entities import Entities
@@ -12,6 +13,8 @@ class GameInterface(WebsocketApp):
 
     Just placeholders to be replaced once we get the client going.
     """
+
+    name: Optional[str] = None
 
     async def on_mount(self) -> None:
         grid = await self.view.dock_grid(edge="left", name="left")
@@ -47,6 +50,12 @@ class GameInterface(WebsocketApp):
             match message["type"]:
                 case "chat":
                     self.console_widget.out.add_log(message["chat_message"])
+                    self.console_widget.refresh()
+                case "registration_successful":
+                    self.name = message["data"]["name"]
+                    self.console_widget.out.add_log(
+                        f"Correctly registerd as {self.name}"
+                    )
                     self.console_widget.refresh()
 
 
