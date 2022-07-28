@@ -5,7 +5,6 @@ from rich.padding import Padding
 from rich.panel import Panel
 from textual.reactive import Reactive
 from textual.widget import Widget
-from websockets.legacy.client import WebSocketClientProtocol
 
 
 class AvailableCommands(Widget):

@@ -1,11 +1,10 @@
 import json
 from typing import Optional
 
+from available_commands import AvailableCommands
 from console import Console
 from entities import Entities
-from available_commands import AvailableCommands
 from map import Map
-from textual.widgets import Placeholder
 from websocket_app import WebsocketApp
 
 
@@ -58,10 +57,10 @@ class GameInterface(WebsocketApp):
                     )
                     self.console_widget.refresh()
                 case "registration_successful":
-                    self.name = message["data"]["name"]
+                    self.name = message["player"]["name"]
                     self.console_widget.name = self.name
                     self.console_widget.out.add_log(
-                        f"Correctly registerd as {self.name}"
+                        f"Correctly registered as {self.name}"
                     )
                     self.console_widget.refresh()
 

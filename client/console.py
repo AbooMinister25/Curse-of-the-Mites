@@ -179,7 +179,7 @@ class Console(Widget):
 
     async def register(self, username: str) -> str:
         """Sends an init request to the server to initialize our player."""
-        request = {"type": "init", "data": username}
+        request = {"type": "init", "username": username}
         await self.main_app.websocket.send(json.dumps(request))
         self.initialized = True
 
