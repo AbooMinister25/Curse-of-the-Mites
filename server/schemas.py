@@ -20,12 +20,6 @@ class InitializePlayer(MessageBase):
     username: str
 
 
-class RequestCommands(MessageBase):
-    """Sent by the client to request the available commands for a player"""
-
-    player_id: int
-
-
 class PlayerSchema(BaseModel):
     """Represents the JSON for a player"""
 
