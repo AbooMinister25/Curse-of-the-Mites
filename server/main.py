@@ -12,9 +12,28 @@ connections = set()
 game = Game()
 
 
+async def initialize_player(connection):
+    """Initializes a player in the game"""
+    init = RequestEvent(type="init", data="Provide a username")
+    await connection.send(init.json())
+
+    message = await connection.recv()
+    event = RequestEvent.parse_obj(json.loads(message))
+
+    if event.type != "init":
+        raise InvalidMessage("Expected an `init` message.")
+
+    username = event.data
+    print(message)
+    player = Player(username, ["spit", "bite"])
+    game.add_player(player, 1, 1)
+
+
 async def register(websocket):
     """Adds a player's connections to connections and removes them when they disconnect."""
+    await initialize_player(websocket)
     connections.add(websocket)
+
     try:
         await handler(websocket)
     finally:
@@ -22,19 +41,6 @@ async def register(websocket):
 
 
 async def handler(websocket):
-    init = RequestEvent(type="init", data="Provide a username")
-    await websocket.send(init.json())
-
-    message = await websocket.recv()
-    event = RequestEvent.parse_obj(json.loads(message))
-
-    if event.type != "init":
-        raise InvalidMessage("Expected an `init` message.")
-
-    username = event.data
-    player = Player(username, ["spit", "bite"])
-    game.add_player(player, 1, 1)
-
     async for message in websocket:
         event = json.loads(message)
         print(event)  # TODO: remove this later.
