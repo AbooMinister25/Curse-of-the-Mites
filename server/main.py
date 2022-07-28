@@ -7,6 +7,8 @@ from game_components.game_objects import Player
 from schemas import ChatEvent, RequestEvent
 from websockets.exceptions import InvalidMessage
 
+TIME_BETWEEN_ROUNDS = 10  # Seconds between each round.
+
 connections = set()
 game = Game()
 
@@ -49,9 +51,23 @@ async def handler(websocket):
                 websockets.broadcast(connections, response.json())
 
 
-async def main():
+async def websocket_handling():
     async with websockets.serve(register, "localhost", 8765):
         await asyncio.Future()  # run forever
+
+
+async def game_loop():
+    """Here we run each tick of the game."""
+    while True:
+        await asyncio.sleep(TIME_BETWEEN_ROUNDS)
+        # HANDLING EACH TICK GOES HERE.
+
+
+async def main():
+    websockets_task = asyncio.create_task(websocket_handling())
+    game_loop_task = asyncio.create_task(game_loop())
+    await websockets_task
+    await game_loop_task
 
 
 asyncio.run(main())
