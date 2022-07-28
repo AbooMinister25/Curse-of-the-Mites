@@ -10,7 +10,7 @@ from websockets.legacy.client import WebSocketClientProtocol
 
 
 class ConsoleLog(Widget):
-    HELP_MESSAGE = "Type /help to view all available commands."
+    HELP_MESSAGE = "Type /help to view all available commands. Use up/down keys to navigate the logs."
 
     console_log: list[str] = [
         HELP_MESSAGE,
@@ -19,16 +19,13 @@ class ConsoleLog(Widget):
         HELP_MESSAGE,
     ]
     reverse_log: Reactive[bool] = Reactive(False)
+    scroll: Reactive[int] = Reactive(0)
 
     def render(self) -> Panel:
         if len(self.console_log) > 7:
             self.console_log.pop(0)
 
-        display_log = (
-            self.console_log
-            if not self.reverse_log
-            else list(reversed(self.console_log))
-        )
+        display_log = self.get_display_logs()
 
         return Panel(
             "\n".join(display_log),
@@ -40,6 +37,34 @@ class ConsoleLog(Widget):
         self.console_log.append(log)
         self.full_log.append(log)
         self.refresh()
+
+    def get_display_logs(self) -> str:
+        """Returns the logs to be displayed, reversed and/or scrolled if necesary."""
+        MAX_LOGS = 7
+
+        display_log = self.console_log
+
+        total_scroll_upper = MAX_LOGS + 1 + self.scroll
+
+        if self.scroll:
+            # Shift everything "up".
+            display_log = ["You're viewing old messages."] + self.full_log[
+                -total_scroll_upper : -self.scroll
+            ]
+        if self.reverse_log:
+            display_log = list(reversed(display_log))
+
+        return display_log
+
+    def scroll_towards_new(self) -> None:
+        """Moves the scroll towards the newer logs."""
+        if self.scroll > 0:
+            self.scroll -= 1
+
+    def scroll_towards_old(self) -> None:
+        """Moves the scroll towards the older logs."""
+        if self.scroll < len(self.full_log):
+            self.scroll += 1
 
 
 class Console(Widget):
@@ -94,6 +119,18 @@ class Console(Widget):
                 self.message = ""
             case self.DELETE_KEY:
                 self.message = self.message[:-1]
+            case "up":
+                (
+                    self.out.scroll_towards_old()
+                    if not self.out.reverse_log
+                    else self.out.scroll_towards_new()
+                )
+            case "down":
+                (
+                    self.out.scroll_towards_new()
+                    if not self.out.reverse_log
+                    else self.out.scroll_towards_old()
+                )
             case _ if "ctrl" in key:
                 # Special keys (DEL, tab, etc.), are registered with a "ctrl" in front, we want to ignore them.
                 pass
