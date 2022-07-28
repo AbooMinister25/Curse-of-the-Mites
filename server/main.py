@@ -9,12 +9,12 @@ from websockets.exceptions import InvalidMessage
 
 TIME_BETWEEN_ROUNDS = 10  # Seconds between each round.
 
-connections = set()
+connections = {}
 game = Game()
 
 
-async def initialize_player(connection):
-    """Initializes a player in the game"""
+async def initialize_player(connection) -> Player:
+    """Initializes a player in the game, and returns the initialized player."""
     init = RequestEvent(type="init", data="Provide a username")
     await connection.send(init.json())
 
@@ -28,12 +28,13 @@ async def initialize_player(connection):
     print(message)
     player = Player(username, ["spit", "bite"])
     game.add_player(player, 1, 1)
+    return player
 
 
 async def register(websocket):
     """Adds a player's connections to connections and removes them when they disconnect."""
-    await initialize_player(websocket)
-    connections.add(websocket)
+    registered_player = await initialize_player(websocket)
+    connections[registered_player.uid] = websocket
 
     try:
         await handler(websocket)
@@ -48,7 +49,7 @@ async def handler(websocket):
         match event["type"]:
             case "chat":
                 response = ChatEvent(type="chat", chat_message=event["chat_message"])
-                websockets.broadcast(connections, response.json())
+                websockets.broadcast(connections.values(), response.json())
 
 
 async def websocket_handling():
