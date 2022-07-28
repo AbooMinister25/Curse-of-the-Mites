@@ -9,10 +9,7 @@ from websocket_app import WebsocketApp
 
 
 class GameInterface(WebsocketApp):
-    """Simple textual app.
-
-    Just placeholders to be replaced once we get the client going.
-    """
+    """Textual MUD client"""
 
     name: Optional[str] = None
     uid: Optional[int] = None
