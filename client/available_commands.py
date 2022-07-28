@@ -1,4 +1,6 @@
-import json
+from __future__ import annotations
+
+import typing
 
 from rich.align import Align
 from rich.padding import Padding
@@ -6,14 +8,19 @@ from rich.panel import Panel
 from textual.reactive import Reactive
 from textual.widget import Widget
 
+if typing.TYPE_CHECKING:
+    from main import GameInterface
+
 
 class AvailableCommands(Widget):
     """Shows the available commands the player can make"""
 
     mouse_over = Reactive(False)
-    available_commands: Reactive[list[str]] = Reactive([])
+    available_commands: Reactive[list[str]] = Reactive(
+        ["north", "east", "south", "west", "flee"]
+    )
 
-    def __init__(self, main_app, name: str | None = None):
+    def __init__(self, main_app: GameInterface, name: str | None = None):
         self.main_app = main_app
         super().__init__(name)
 
@@ -26,12 +33,9 @@ class AvailableCommands(Widget):
             title="Allowed Moves",
         )
 
-    async def refresh_commands(self) -> None:
-        """Refreshes the available commands list by fetching data from the server"""
-        data = json.dumps({"type": "request", "data": "commands"})
-        await self.main_app.websocket.send(data)
-        message = await self.main_app.websocket.recv()
-        message = json.loads(message)
+    def add_commands(self, commands: list[str]) -> None:
+        """Adds the given commands to our list of available commands"""
+        self.available_commands.extend(commands)
 
     def on_enter(self) -> None:
         self.mouse_over = True

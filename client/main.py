@@ -15,6 +15,8 @@ class GameInterface(WebsocketApp):
     """
 
     name: Optional[str] = None
+    uid: Optional[int] = None
+    initialized: bool = False
 
     async def on_mount(self) -> None:
         grid = await self.view.dock_grid(edge="left", name="left")
@@ -57,7 +59,12 @@ class GameInterface(WebsocketApp):
                     )
                     self.console_widget.refresh()
                 case "registration_successful":
+                    self.initialized = True
                     self.name = message["player"]["name"]
+                    self.uid = message["player"]["uid"]
+                    self.available_commands_widget.add_commands(
+                        message["player"]["allowed_actions"]
+                    )
                     self.console_widget.name = self.name
                     self.console_widget.out.add_log(
                         f"Correctly registered as {self.name}"
