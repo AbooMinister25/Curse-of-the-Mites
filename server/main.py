@@ -2,11 +2,10 @@ import asyncio
 import json
 
 import websockets
-from websockets.exceptions import InvalidMessage
-
 from game_components.game import Game
 from game_components.game_objects import Player
 from schemas import ChatEvent, RequestEvent
+from websockets.exceptions import InvalidMessage
 
 connections = set()
 game = Game()

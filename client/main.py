@@ -1,10 +1,9 @@
 import json
 
-from textual.widgets import Placeholder
-
 from console import Console
 from entities import Entities
 from map import Map
+from textual.widgets import Placeholder
 from websocket_app import WebsocketApp
 
 
