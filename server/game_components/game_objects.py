@@ -93,80 +93,120 @@ class Mob(Entity):
         super().__init__(_name, _allowed_actions)
 
 
+class AddCommandResult(typing.NamedTuple):
+    success: bool
+    message: str
+
+
 class Player(Entity):
     level: int
-    command_queue: list[dict[str, str | int | None]]
+    command_queue: list[dict[str, Entity | None]]
 
     def __init__(self, _name: str, _allowed_actions: list[str]):
         super().__init__(_name, _allowed_actions)
         self.level = 0
         self.command_queue = []
 
-    def update(self) -> list[dict[str, str | int | None]] | None:
-        directions = ["north", "east", "south", "west"]
+    def update(self) -> list[ActionDict] | None:
+        """Updates the player for one tick.
+
+        Executes the next action in the players queue.
+        Returns a list of ActionDicts if the player did something and None if they didn't
+        """
         self.mana += 10
         self.health += random.randint(1, 5)
 
-        commands: list[dict[str, str | int | None]] = []
-        while len(self.command_queue) > 0:
+        result = None
+
+        if len(self.command_queue) > 0:
             next_command = self.command_queue.pop()
-            if self.in_combat:
-                if next_command["command"] not in directions:
-                    commands.append(next_command)
-            if not self.in_combat:
-                # this is wrong too
-                pass
-            if next_command["command"] not in directions:
-                break
+            result = self._do(next_command)
 
         super().update()
-        if len(commands) > 0:
-            return commands
-        return None
+
+        return result
+
+    def _do(self, command: CommandDict) -> None:
+        movement_commands = ["north", "east", "south", "west", "flee"]
+
+        # TODO: Tell the player "HEY, YOU DID THIS THING"
+        if command["command"] in movement_commands:
+            pass  # TODO: IMPLEMENT MOVEMENT.
+        else:
+            result = self.commit_action(command["command"], command["target"])
+
+        return result
 
     def send_events_to_player(self):
         for event in self.events:
             # TODO: SEND EVENTS TO THE PLAYER
             pass
 
-    def add_command_to_queue(self, _command: str, _target: int | None = None) -> bool:
+    def add_command_to_queue(
+        self, _command: str, _target: Entity | None = None
+    ) -> AddCommandResult:
         """
-        Dammit this is wrong.
+        Adds a command to the player queue if it's valid.
 
         :param _command: flee, north, east, south, west, one of the skills, clear, nvm
-        :param _target: int of entity or list of integers or None
+        :param _target: Entity to be targeted or None.
         :return:
         """
-        valid_commands = [str(e) for e in self.allowed_actions.keys()] + ["flee"]
+        validity = self._check_command_validity(_command, _target)
+
+        if validity.success:
+            event = {"command": _command, "target": _target}
+            self.command_queue.insert(0, event)
+
+        return validity
+
+    def _check_command_validity(
+        self, _command: str, _target: Entity | None = None
+    ) -> AddCommandResult:
+        """
+        Checks that a command is valid.
+
+        :param _command: flee, north, east, south, west, one of the skills, clear, nvm
+        :param _target: Entity to be targeted or None.
+        :return:
+        """
         directions = ["north", "east", "south", "west"]
-        queue_commands = ["clear", "nvm"]
-        valid_commands += directions + queue_commands
-        if _command not in valid_commands:
-            # Give me junk ill give you junk
-            return False
-        if _command in self.allowed_actions.keys():
-            # make sure actions that need a target get a target
-            if self.allowed_actions[_command].requires_target and _target is None:
-                return False
+
         if _command == "flee":
             # you tried to flee but you aren't in combat. idiot.
             if not self.in_combat:
-                return False
+                return AddCommandResult(
+                    False, "Silly, don't try to flee if you aren't in combat!"
+                )
+            else:
+                return AddCommandResult(True, "Added fleeing to your queue!")
         if _command in directions:
             # you tried to move but you are in combat. STOP.
             if self.in_combat:
-                return False
+                return AddCommandResult(
+                    False, "Don't just move like that when you're fighting!"
+                )
+            else:
+                return AddCommandResult(True, f"Moving {_command} added to your queue.")
+        if _command in self.allowed_actions:
+            # make sure actions that need a target get a target
+            if self.allowed_actions[_command].requires_target and _target is None:
+                return AddCommandResult(False, f"{_command} requires a target!")
+            elif (
+                not self.allowed_actions[_command].requires_target
+            ) and _target is not None:
+                return AddCommandResult(False, f"{_command} doesn't require a target!")
         match _command:
             case "clear":
                 self.command_queue = []
-                return True
+                return AddCommandResult(True, "Your queue was erased!")
             case "nvm":
                 self.command_queue = self.command_queue[:-1]
-                return True
+                return AddCommandResult(True, "Last command of the queue erased!")
+            case _ if _command in self.allowed_actions:
+                return AddCommandResult(True, f"{_command} added to your queue.")
             case _:
-                event = {"command": _command, "target": _target}
-                self.command_queue.append(event)
-                return True
+                return AddCommandResult(False, f"You can't do {_command}!")
 
 
 class TargetsError(Exception):
@@ -675,6 +715,11 @@ class ActionDict(typing.TypedDict):
     hit: bool
     dmg: int
     cast: bool
+
+
+class CommandDict(typing.TypedDict):
+    command: str
+    target: Entity
 
 
 class DisplayDict(typing.TypedDict):

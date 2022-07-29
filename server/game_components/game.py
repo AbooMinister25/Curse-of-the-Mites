@@ -164,10 +164,7 @@ class Game:
 
         for room in self.rooms.values():
             for player in room.get_players():
-                actions = player.update()
-                assert actions is not None, "returned `None` for actions"
-                # this wont work at all.
-                set([action for action in actions])
+                player.update()
 
 
 if __name__ == "__main__":
@@ -190,6 +187,7 @@ if __name__ == "__main__":
     b = Mob("antb", ["bite"])
     g.add_mob(b, 1, 1)
 
+    """
     # testing entity combat
     print(temp)
     result = A.commit_action("bite", a)
@@ -205,27 +203,45 @@ if __name__ == "__main__":
         for k, v in event.items():
             print(f"\t{k}: {v}")
     print(temp)
+    """
+    # testing player updating.
+    A.add_command_to_queue("bite", a)
+    result = A.update()
+    for event in result:
+        print("----")
+        for k, v in event.items():
+            print(f"\t{k}: {v}")
+    print(temp)
+    A.add_command_to_queue("spit")
+    result = A.update()
+    for event in result:
+        print("----")
+        for k, v in event.items():
+            print(f"\t{k}: {v}")
+    print(temp)
 
+    """
     # Test Combats
     #
-    # c = Mob("antc", ["bite"])
-    # g.add_mob(c, 1, 1)
-    # # adding a player to a map location
-    # B = Player("aboo", ["stomp", "spit"])
-    # g.add_player(B, 1, 1)
-    # d = Mob("antd",['eat_berry','bite','stomp'])
-    # g.add_mob(d,1,1)
-    # C = Player("baut",['eat_berry','bite','spit'])
-    # combata = Combat([A, a], temp)
-    # combatb = Combat([B, b, c], temp)
-    # combatc = Combat([d, C], temp)
-    # g.combats.append(combata)
-    # g.combats.append(combatb)
-    # g.combats.append(combatc)
-    # for i,combat in enumerate(g.combats):
-    #     print(i,combat)
-    # combatb.add_to_combat(A)
-    # combata.add_to_combat(d)
-    # g.update()
-    # for i,combat in enumerate(g.combats):
-    #     print(i,combat)
+    c = Mob("antc", ["bite"])
+    g.add_mob(c, 1, 1)
+    # adding a player to a map location
+    B = Player("aboo", ["stomp", "spit"])
+    g.add_player(B, 1, 1)
+    d = Mob("antd",['eat_berry','bite','stomp'])
+    g.add_mob(d,1,1)
+    C = Player("baut",['eat_berry','bite','spit'])
+    combata = Combat([A, a], temp)
+    combatb = Combat([B, b, c], temp)
+    combatc = Combat([d, C], temp)
+    g.combats.append(combata)
+    g.combats.append(combatb)
+    g.combats.append(combatc)
+    for i,combat in enumerate(g.combats):
+        print(i,combat)
+    combatb.add_to_combat(A)
+    combata.add_to_combat(d)
+    g.update()
+    for i,combat in enumerate(g.combats):
+        print(i,combat)
+    """
