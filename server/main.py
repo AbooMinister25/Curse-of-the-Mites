@@ -5,7 +5,10 @@ import websockets
 from game_components.game import Game
 from game_components.game_objects import Player
 from mess_up_actions import MessedPlayer
-from schemas import (
+from websockets.exceptions import InvalidMessage
+from websockets.legacy.server import WebSocketServerProtocol
+
+from common.schemas import (
     ActionNoTargetRequest,
     ActionWithTargetRequest,
     ChatMessage,
@@ -13,8 +16,6 @@ from schemas import (
     PlayerSchema,
     RegistrationSuccessful,
 )
-from websockets.exceptions import InvalidMessage
-from websockets.legacy.server import WebSocketServerProtocol
 
 TIME_BETWEEN_ROUNDS = 10  # Seconds between each round.
 
