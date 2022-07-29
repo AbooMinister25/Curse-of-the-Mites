@@ -39,9 +39,10 @@ class ConsoleLog(Widget):
     REGISTER_MESSAGE = (
         "Type `/register [USERNAME]` to enter the game with your username."
     )
+    ACTIONS_MESSAGE = "Actions are prefixed with !, use them to control your bug."
 
-    console_log: list[str] = [HELP_MESSAGE, REGISTER_MESSAGE]
-    full_log: list[str] = [HELP_MESSAGE, REGISTER_MESSAGE]
+    console_log: list[str] = [HELP_MESSAGE, REGISTER_MESSAGE, ACTIONS_MESSAGE]
+    full_log: list[str] = [HELP_MESSAGE, REGISTER_MESSAGE, ACTIONS_MESSAGE]
     reverse_log: Reactive[bool] = Reactive(False)
     scroll: Reactive[int] = Reactive(0)
 
@@ -100,6 +101,7 @@ class Console(Widget):
     ALL_COMMANDS = {
         "/register [USERNAME]": "Use this command to set your username and join the game.",
         "/reverse_console": "Reverses the way console logs are displayed.",
+        "actions": "Actions are prefixed with !, use them to control your bug.",
     }
 
     mouse_over = Reactive(False)
@@ -187,9 +189,9 @@ class Console(Widget):
                 log_display = "Console output reversed."
             case ["/register", username]:
                 log_display = await self.register(username)
-            case [action, target] if self.message[0] == "/":
+            case [action, target] if self.message.startswith("!"):
                 log_display = await self.handle_action_with_target(action, target)
-            case [action] if self.message[0] == "/":
+            case [action] if self.message.startswith("!"):
                 log_display = await self.handle_action_without_target(action)
             case _:
                 # Treat commands without a leading slash as "chat" commands.

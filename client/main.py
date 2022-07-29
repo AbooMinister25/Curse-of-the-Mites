@@ -72,6 +72,7 @@ class GameInterface(WebsocketApp):
                     self.console_widget.refresh()
                 case ActionResponse():
                     self.console_widget.out.add_log(event.response)
+                    self.console_widget.refresh()
                 case _:
                     raise NotImplementedError(f"Unknown event {event!r}")
 
