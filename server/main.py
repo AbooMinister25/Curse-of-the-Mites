@@ -93,21 +93,20 @@ async def handle_action_with_target(
     req: ActionWithTargetRequest, ws: WebSocketServerProtocol
 ):
     action = messed_players[req.player].actions.get(req.action)
-    assert action
 
-    if action.requires_target:
+    if action is None:
+        response = ActionResponse(
+            type="action_response", response=f"You can't {req.action}!"
+        )
+    elif action.requires_target:
         result = game.get_player(req.player).add_command_to_queue(
             req.action, req.target
         )
         response = ActionResponse(type="action_response", response=result.message)
-    elif action is not None:
+    else:
         response = ActionResponse(
             type="action_response",
             response=f"{req.action} doesn't take any targets!",
-        )
-    else:
-        response = ActionResponse(
-            type="action_response", response=f"You can't {req.action}!"
         )
 
     await ws.send(response.json())
@@ -117,20 +116,19 @@ async def handle_action_without_target(
     req: ActionNoTargetRequest, ws: WebSocketServerProtocol
 ):
     action = messed_players[req.player].actions.get(req.action)
-    assert action
 
     response = None
-    if not action.requires_target:
+    if action is None:
+        response = ActionResponse(
+            type="action_response", response=f"You can't {req.action}!"
+        )
+    elif not action.requires_target:
         result = game.get_player(req.player).add_command_to_queue(req.action)
         response = ActionResponse(type="action_response", response=result.message)
-    elif action is not None:
+    else:
         response = ActionResponse(
             type="action_response",
             response=f"{req.action} needs a target!",
-        )
-    else:
-        response = ActionResponse(
-            type="action_response", response=f"You can't {req.action}!"
         )
 
     await ws.send(response.json())
