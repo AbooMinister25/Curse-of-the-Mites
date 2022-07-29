@@ -12,48 +12,36 @@ from game_components.game_objects import (
 
 
 class Game:
-    players: list[Player]
-    mobs: list[Mob]
-    rooms: list[BaseRoom]
+    players: dict[int:Player]
+    mobs: dict[int:Mob]
+    rooms: dict[int:BaseRoom]
     combats: list[Combat]
     start_time: int
 
     def __init__(self):
-        self.players = []
-        self.mobs = []
-        self.rooms = []
+        self.players = {}
+        self.mobs = {}
+        self.rooms = {}
         self.combats = []
         self.build_map()
         self.start_time = round(time.time() * 1000)
 
     def get_room_at(self, x, y) -> BaseRoom | None:
         temp = None
-        for room in self.rooms:
+        for room in self.rooms.values():
             if room.get_map_location() == (x, y):
                 temp = room
                 break
         return temp
 
     def get_room(self, _uid: int) -> BaseRoom | None:
-        temp = None
-        for room in self.rooms:
-            if room.uid == _uid:
-                return room
-        return temp
+        return self.rooms.get(_uid)
 
     def get_player(self, _uid: int) -> Player | None:
-        temp = None
-        for player in self.players:
-            if player.uid == _uid:
-                return player
-        return temp
+        return self.players.get(_uid)
 
     def get_mob(self, _uid: int) -> Mob | None:
-        temp = None
-        for mob in self.mobs:
-            if mob.uid == _uid:
-                return mob
-        return temp
+        return self.mobs.get(_uid)
 
     def build_map(self) -> None:
         largest_x = 0
@@ -68,12 +56,12 @@ class Game:
                 largest_x = room_data["x"]
             if room_data["y"] > largest_y:
                 largest_y = room_data["y"]
-            self.rooms.append(temp)
+            self.rooms[temp.uid] = temp
 
         for y in range(largest_y + 1):
             for x in range(largest_x + 1):
                 current_room = None
-                for room in self.rooms:
+                for room in self.rooms.values():
                     if room.get_map_location() == (x, y):
                         current_room = room
                         break
@@ -85,7 +73,7 @@ class Game:
                         "west": None,
                     }
 
-                    for room in self.rooms:
+                    for room in self.rooms.values():
                         if room.get_map_location() == (
                             current_room.display_x,
                             current_room.display_y - 1,
@@ -113,7 +101,7 @@ class Game:
                     current_room.set_links(directions)
 
     def add_player(self, player: Player, target_x, target_y) -> bool:
-        for room in self.rooms:
+        for room in self.rooms.values():
             if room.can_entity_step:
                 if room.get_map_location() == (target_x, target_y):
                     room.add_player(player)
@@ -126,14 +114,12 @@ class Game:
             return False
         player_moved = False
         if isinstance(_player, int):
-            for player in self.players:
-                if player.uid == _player:
-                    _player = player
-                    break
+            if self.players[_player]:
+                _player = self.players[_player]
 
         if isinstance(_player, Player):
             # print("HERE")
-            for room in self.rooms:
+            for room in self.rooms.values():
                 if _player in room.get_players():
                     # print(_player)
                     # print(room.get_players())
@@ -150,7 +136,7 @@ class Game:
         return player_moved
 
     def add_mob(self, mob: Mob, target_x, target_y) -> bool:
-        for room in self.rooms:
+        for room in self.rooms.values():
             if room.can_entity_step:
                 if room.get_map_location() == (target_x, target_y):
                     room.add_mob(mob)
@@ -175,7 +161,7 @@ class Game:
             else:
                 reduce_combats_done = True
 
-        for room in self.rooms:
+        for room in self.rooms.values():
             for player in room.get_players():
                 actions = player.update()
                 # this wont work at all.

@@ -8,9 +8,10 @@ from mess_up_actions import MessedPlayer
 from schemas import (
     ActionNoTargetRequest,
     ActionWithTargetRequest,
-    ChatEvent,
-    RegistrationSuccess,
-    RequestEvent,
+    ChatMessage,
+    InitializePlayer,
+    PlayerSchema,
+    RegistrationSuccessful,
 )
 from websockets.exceptions import InvalidMessage
 from websockets.legacy.server import WebSocketServerProtocol
@@ -24,16 +25,18 @@ messed_players: dict[int, MessedPlayer] = {}
 game = Game()
 
 
-async def initialize_player(connection) -> Player:
+async def initialize_player(connection: WebSocketServerProtocol) -> Player:
     """Initializes a player in the game, and returns the initialized player."""
     message = await connection.recv()
-    event = RequestEvent.parse_obj(json.loads(message))
+    event = InitializePlayer.parse_obj(json.loads(message))
 
     if event.type != "init":
         raise InvalidMessage("Expected an `init` message.")
 
-    username = event.data
+    username = event.username
+    print(message)  # TODO: remove this later.
     player = Player(username, ["spit", "bite"])
+
     game.add_player(player, 1, 1)
 
     messed_players[player.uid] = MessedPlayer(player)
@@ -41,13 +44,20 @@ async def initialize_player(connection) -> Player:
     return player
 
 
-async def register(websocket):
+async def register(websocket: WebSocketServerProtocol) -> None:
     """Adds a player's connections to connections and removes them when they disconnect."""
     registered_player = await initialize_player(websocket)
 
-    registration_response = RegistrationSuccess(registered_player)
-    await websocket.send(registration_response.json())
+    player_schema = PlayerSchema(
+        uid=registered_player.uid,
+        name=registered_player.name,
+        allowed_actions=set(registered_player.allowed_actions),
+    )
+    registration_response = RegistrationSuccessful(
+        type="registration_successful", player=player_schema
+    )
 
+    await websocket.send(registration_response.json())
     connections[registered_player.uid] = websocket
 
     try:
@@ -56,13 +66,23 @@ async def register(websocket):
         del connections[registered_player.uid]
 
 
-async def handler(websocket):
+async def handler(websocket: WebSocketServerProtocol) -> None:
     async for message in websocket:
         event = json.loads(message)
         print(event)  # TODO: remove this later.
+
         match event:
-            case {"type": "chat"}:
-                response = ChatEvent(**event)
+            case {
+                "type": "chat",
+                "player_name": player_name,
+                "chat_message": chat_message,
+            }:
+                response = ChatMessage(
+                    type="chat",
+                    player_name=player_name,
+                    chat_message=chat_message,
+                )
+
                 websockets.broadcast(connections.values(), response.json())
             case {"type": "action", "target": _}:
                 event_unpacked = ActionWithTargetRequest(**event)
@@ -116,7 +136,7 @@ async def handle_action_without_target(
     await ws.send(json.dumps(response))
 
 
-async def websocket_handling():
+async def websocket_handling() -> None:
     async with websockets.serve(register, "localhost", 8765):
         await asyncio.Future()  # run forever
 
@@ -128,7 +148,7 @@ async def game_loop():
         # HANDLING EACH TICK GOES HERE.
 
 
-async def main():
+async def main() -> None:
     await asyncio.gather(websocket_handling(), game_loop())
 
 
