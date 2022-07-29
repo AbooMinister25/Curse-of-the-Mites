@@ -8,6 +8,7 @@ from .schemas import (
     ActionWithTargetRequest,
     ChatMessage,
     InitializePlayer,
+    MovementRequest,
     PlayerSchema,
     RegistrationSuccessful,
 )
@@ -25,6 +26,7 @@ __all__ = (
     "InitializePlayer",
     "PlayerSchema",
     "RegistrationSuccessful",
+    "MovementRequest",
     # serialization.py
     "deserialize_client_request",
     "deserialize_server_response",

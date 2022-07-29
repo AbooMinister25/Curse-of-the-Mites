@@ -7,8 +7,12 @@ from entities import Entities
 from map import Map
 from websocket_app import WebsocketApp
 
-from common.schemas import ActionResponse, ChatMessage, RegistrationSuccessful
-from common.serialization import deserialize_server_response
+from common import (
+    ActionResponse,
+    ChatMessage,
+    RegistrationSuccessful,
+    deserialize_server_response,
+)
 
 
 class GameInterface(WebsocketApp):
