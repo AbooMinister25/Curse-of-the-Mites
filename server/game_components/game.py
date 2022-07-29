@@ -147,24 +147,16 @@ class Game:
 
     def update(self):
         # REDUCE COMBATS
-        reduce_combats_done = False
-        while not reduce_combats_done:
-            for i, _e in enumerate(self.combats):
-                hit = False
-                for j, _f in enumerate(self.combats):
-                    if i != j:
-                        result = _e.combine(_f)
-                        if result is not None:
-                            self.combats.remove(result)
-                            break
-                if hit:
-                    break
-            else:
-                reduce_combats_done = True
+        for i, _e in enumerate(self.combats):
+            for j, _f in enumerate(self.combats):
+                if i != j:
+                    result = _e.combine(_f)
+                    if result is not None:
+                        self.combats.remove(result)
+                        break
 
-        for room in self.rooms.values():
-            for player in room.get_players():
-                player.update()
+        for player_uid in self.players:
+            self.players[player_uid].update()
 
 
 if __name__ == "__main__":
@@ -204,6 +196,7 @@ if __name__ == "__main__":
             print(f"\t{k}: {v}")
     print(temp)
     """
+    """
     # testing player updating.
     A.add_command_to_queue("bite", a)
     result = A.update()
@@ -219,7 +212,6 @@ if __name__ == "__main__":
         for k, v in event.items():
             print(f"\t{k}: {v}")
     print(temp)
-
     """
     # Test Combats
     #
@@ -228,20 +220,20 @@ if __name__ == "__main__":
     # adding a player to a map location
     B = Player("aboo", ["stomp", "spit"])
     g.add_player(B, 1, 1)
-    d = Mob("antd",['eat_berry','bite','stomp'])
-    g.add_mob(d,1,1)
-    C = Player("baut",['eat_berry','bite','spit'])
+    d = Mob("antd", ["eat_berry", "bite", "stomp"])
+    g.add_mob(d, 1, 1)
+    C = Player("baut", ["eat_berry", "bite", "spit"])
     combata = Combat([A, a], temp)
     combatb = Combat([B, b, c], temp)
-    combatc = Combat([d, C], temp)
+    combatc = Combat([d, C], g.get_room_at(2, 2))
     g.combats.append(combata)
     g.combats.append(combatb)
     g.combats.append(combatc)
-    for i,combat in enumerate(g.combats):
-        print(i,combat)
+    for i, combat in enumerate(g.combats):
+        print(i, combat)
     combatb.add_to_combat(A)
     combata.add_to_combat(d)
     g.update()
-    for i,combat in enumerate(g.combats):
-        print(i,combat)
-    """
+    print("~Reduced~")  # Combats in the same room get reduced.
+    for i, combat in enumerate(g.combats):
+        print(i, combat)
