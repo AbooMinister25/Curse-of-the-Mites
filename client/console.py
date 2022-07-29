@@ -25,6 +25,8 @@ if typing.TYPE_CHECKING:
 P = typing.ParamSpec("P")
 R = typing.TypeVar("R")
 
+NOTHING_TO_LOG = ""
+
 
 def enforce_initialization(
     func: typing.Callable[typing.Concatenate[Console, P], typing.Awaitable[str]]
@@ -186,7 +188,7 @@ class Console(Widget):
         Takes the message that the user entered and decides if it's a valid command and how to handle it.
         Returns the message that should be displayed in the log.
         """
-        log_display = ""
+        log_display = NOTHING_TO_LOG
 
         match self.message.split():
             case ["/help"]:
@@ -217,7 +219,7 @@ class Console(Widget):
         await self.main_app.websocket.send(request.json())
         self.initialized = True
 
-        return ""
+        return NOTHING_TO_LOG
 
     @enforce_initialization
     async def send_chat_message(self) -> str:
@@ -228,7 +230,7 @@ class Console(Widget):
             chat_message=self.message,
         )
         await self.main_app.websocket.send(response.json())
-        return ""
+        return NOTHING_TO_LOG
 
     @enforce_initialization
     async def handle_action_with_target(self, action: str, target: str) -> str:
@@ -242,7 +244,7 @@ class Console(Widget):
                 player=self.main_app.uid,
             )
             await self.main_app.websocket.send(message.json())
-            return ""
+            return NOTHING_TO_LOG
         else:
             return "That target doesn't exist!"
 
@@ -254,7 +256,7 @@ class Console(Widget):
             player=self.main_app.uid,
         )
         await self.main_app.websocket.send(message.json())
-        return ""
+        return NOTHING_TO_LOG
 
     @enforce_initialization
     async def handle_movement(self, direction: str) -> str:
@@ -262,7 +264,7 @@ class Console(Widget):
             type="move", direction=direction, player=self.main_app.uid
         )
         await self.main_app.websocket.send(message.json())
-        return ""
+        return NOTHING_TO_LOG
 
     @enforce_initialization
     async def handle_movement(self, direction: str) -> str:
