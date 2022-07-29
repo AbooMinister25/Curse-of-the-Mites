@@ -7,18 +7,28 @@ import typing
 from abc import ABC, abstractmethod  # abstract classes
 
 raw_map: list[Tile] = [
-    {"x": 0, "y": 0, "type": "wall"},
-    {"x": 1, "y": 0, "type": "wall"},
-    {"x": 2, "y": 0, "type": "wall"},
-    {"x": 3, "y": 0, "type": "wall"},
-    {"x": 0, "y": 1, "type": "wall"},
-    {"x": 1, "y": 1, "type": "hall"},
-    {"x": 2, "y": 1, "type": "hall"},
-    {"x": 3, "y": 1, "type": "wall"},
-    {"x": 0, "y": 2, "type": "wall"},
-    {"x": 1, "y": 2, "type": "wall"},
-    {"x": 2, "y": 2, "type": "wall"},
-    {"x": 3, "y": 2, "type": "wall"},
+    {"y": 1, "x": 14, "type": "wall"},
+    {"y": 1, "x": 15, "type": "wall"},
+    {"y": 1, "x": 16, "type": "wall"},
+    {"y": 2, "x": 14, "type": "wall"},
+    {"y": 2, "x": 15, "type": "sd"},
+    {"y": 2, "x": 16, "type": "wall"},
+    {"y": 3, "x": 14, "type": "wall"},
+    {"y": 3, "x": 15, "type": "tol"},
+    {"y": 3, "x": 16, "type": "wall"},
+    {"y": 3, "x": 17, "type": "wall"},
+    {"y": 4, "x": 14, "type": "wall"},
+    {"y": 4, "x": 15, "type": "tol"},
+    {"y": 4, "x": 16, "type": "rs"},
+    {"y": 4, "x": 17, "type": "wall"},
+    {"y": 5, "x": 14, "type": "wall"},
+    {"y": 5, "x": 15, "type": "tol"},
+    {"y": 5, "x": 16, "type": "rs"},
+    {"y": 5, "x": 17, "type": "wall"},
+    {"y": 6, "x": 14, "type": "wall"},
+    {"y": 6, "x": 15, "type": "tol"},
+    {"y": 6, "x": 16, "type": "rs"},
+    {"y": 6, "x": 17, "type": "wall"},
 ]
 
 mobs = []
@@ -528,7 +538,7 @@ class Wall(BaseRoom):
         _display_y: int,
         _title: str = "It's a wall",
         _display_char: str = "#",
-        _color: tuple[int, int, int] = (0, 0, 0),
+        _color: tuple[int, int, int] = (0, 102, 0),
         _description: str = "How are you reading this",
         _linked_rooms: dict[str, None | BaseRoom] | None = None,
     ):
@@ -546,15 +556,166 @@ class Wall(BaseRoom):
         self.can_entity_step = False
 
 
-class Hall(BaseRoom):
+class TopOfLeaf(BaseRoom):
     def __init__(
         self,
         _display_x: int,
         _display_y: int,
-        _title: str = "The hallway",
-        _display_char: str = " ",
-        _color: tuple[int, int, int] = (0, 0, 0),
-        _description: str = "It's a hallway",
+        _title: str = "Top of the leaf",
+        _display_char: str = ".",
+        _color: tuple[int, int, int] = (0, 204, 0),
+        _description: str = "A nice bit of leaf.",
+        _linked_rooms: dict[str, None | BaseRoom] | None = None,
+    ):
+        if _linked_rooms is None:
+            _linked_rooms = {"north": None, "east": None, "south": None, "west": None}
+        super().__init__(
+            _title=_title,
+            _display_char=_display_char,
+            _color=_color,
+            _description=_description,
+            _linked_rooms=_linked_rooms,
+            _display_x=_display_x,
+            _display_y=_display_y,
+        )
+        self.can_entity_step = True
+
+
+class LeftLower(BaseRoom):
+    def __init__(
+        self,
+        _display_x: int,
+        _display_y: int,
+        _title: str = "A Shaded Leaf",
+        _display_char: str = "\\",
+        _color: tuple[int, int, int] = (0, 102, 51),
+        _description: str = "A nice bit of leaf.",
+        _linked_rooms: dict[str, None | BaseRoom] | None = None,
+    ):
+        if _linked_rooms is None:
+            _linked_rooms = {"north": None, "east": None, "south": None, "west": None}
+        super().__init__(
+            _title=_title,
+            _display_char=_display_char,
+            _color=_color,
+            _description=_description,
+            _linked_rooms=_linked_rooms,
+            _display_x=_display_x,
+            _display_y=_display_y,
+        )
+        self.can_entity_step = True
+
+
+class RoughSide(BaseRoom):
+    def __init__(
+        self,
+        _display_x: int,
+        _display_y: int,
+        _title: str = "The Rough Side",
+        _display_char: str = "*",
+        _color: tuple[int, int, int] = (76, 153, 0),
+        _description: str = "A nice bit of leaf.",
+        _linked_rooms: dict[str, None | BaseRoom] | None = None,
+    ):
+        if _linked_rooms is None:
+            _linked_rooms = {"north": None, "east": None, "south": None, "west": None}
+        super().__init__(
+            _title=_title,
+            _display_char=_display_char,
+            _color=_color,
+            _description=_description,
+            _linked_rooms=_linked_rooms,
+            _display_x=_display_x,
+            _display_y=_display_y,
+        )
+        self.can_entity_step = True
+
+
+class LeftTop(BaseRoom):
+    def __init__(
+        self,
+        _display_x: int,
+        _display_y: int,
+        _title: str = "Sunny Left",
+        _display_char: str = "/",
+        _color: tuple[int, int, int] = (51, 255, 51),
+        _description: str = "The vista of the sun in the distance is beautiful from this view.",
+        _linked_rooms: dict[str, None | BaseRoom] | None = None,
+    ):
+        if _linked_rooms is None:
+            _linked_rooms = {"north": None, "east": None, "south": None, "west": None}
+        super().__init__(
+            _title=_title,
+            _display_char=_display_char,
+            _color=_color,
+            _description=_description,
+            _linked_rooms=_linked_rooms,
+            _display_x=_display_x,
+            _display_y=_display_y,
+        )
+        self.can_entity_step = True
+
+
+class SpidersDen(BaseRoom):
+    def __init__(
+        self,
+        _display_x: int,
+        _display_y: int,
+        _title: str = "The Den of a Spider",
+        _display_char: str = "X",
+        _color: tuple[int, int, int] = (153, 0, 0),
+        _description: str = "Carcasses of past catapillers crunch under your feet.",
+        _linked_rooms: dict[str, None | BaseRoom] | None = None,
+    ):
+        if _linked_rooms is None:
+            _linked_rooms = {"north": None, "east": None, "south": None, "west": None}
+        super().__init__(
+            _title=_title,
+            _display_char=_display_char,
+            _color=_color,
+            _description=_description,
+            _linked_rooms=_linked_rooms,
+            _display_x=_display_x,
+            _display_y=_display_y,
+        )
+        self.can_entity_step = True
+
+
+class RightTop(BaseRoom):
+    def __init__(
+        self,
+        _display_x: int,
+        _display_y: int,
+        _title: str = "Shaded Right Side",
+        _display_char: str = "|",
+        _color: tuple[int, int, int] = (0, 102, 51),
+        _description: str = "Shadows from the left side fall at your feet. It's tough to see in front of you.",
+        _linked_rooms: dict[str, None | BaseRoom] | None = None,
+    ):
+        if _linked_rooms is None:
+            _linked_rooms = {"north": None, "east": None, "south": None, "west": None}
+        super().__init__(
+            _title=_title,
+            _display_char=_display_char,
+            _color=_color,
+            _description=_description,
+            _linked_rooms=_linked_rooms,
+            _display_x=_display_x,
+            _display_y=_display_y,
+        )
+        self.can_entity_step = True
+
+
+class RightLower(BaseRoom):
+    def __init__(
+        self,
+        _display_x: int,
+        _display_y: int,
+        _title: str = "Deeply Shaded Right Side",
+        _display_char: str = "-",
+        _color: tuple[int, int, int] = (0, 51, 25),
+        _description: str = """This part of the leaf is all in shadow.
+        It's nearly impossible to see in front of you.""",
         _linked_rooms: dict[str, None | BaseRoom] | None = None,
     ):
         if _linked_rooms is None:
