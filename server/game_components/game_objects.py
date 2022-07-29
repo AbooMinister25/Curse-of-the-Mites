@@ -376,8 +376,8 @@ class BaseRoom(ABC):
         None if the rooms are not set.
         """
         data = (
-            f"{_title}{_description}{_linked_rooms['north']}{_linked_rooms['east']}"
-            f"{_linked_rooms['south']}{_linked_rooms['west']}"
+            f"{_display_x}{_title}{_description}{_linked_rooms['north']}{_linked_rooms['east']}"
+            f"{_display_y}{_linked_rooms['south']}{_linked_rooms['west']}"
         )
         m = hashlib.sha256()
         m.update(data.encode())
