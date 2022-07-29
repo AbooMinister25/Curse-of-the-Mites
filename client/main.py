@@ -55,11 +55,13 @@ class GameInterface(WebsocketApp):
                     self.console_widget.refresh()
                 case "registration_successful":
                     self.name = message["data"]["name"]
-                    self.console_widget.name = self.name
+                    self.uid = message["data"]["uid"]
                     self.console_widget.out.add_log(
                         f"Correctly registerd as {self.name}"
                     )
                     self.console_widget.refresh()
+                case "action_response":
+                    self.console_widget.out.add_log(message["response"])
 
 
 try:

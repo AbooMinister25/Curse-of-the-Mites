@@ -169,8 +169,10 @@ class Console(Widget):
                 log_display = "Console output reversed."
             case ["/register", username]:
                 log_display = await self.register(username)
-            case _ if self.message[0] == "/":
-                log_display = f"Invalid command. {self.out.HELP_MESSAGE}"
+            case [action, target] if self.message[0] == "/":
+                log_display = await self.handle_action_with_target(action, target)
+            case [action] if self.message[0] == "/":
+                log_display = await self.handle_action_without_target(action)
             case _:
                 # Treat commands without a leading slash as "chat" commands.
                 log_display = await self.send_chat_message()
@@ -208,6 +210,37 @@ class Console(Widget):
         )
         await self.main_app.websocket.send(response)
         return ""
+
+    @enforce_initialization
+    async def handle_action_with_target(self, action: str, target: str) -> str:
+        target_uid = self.get_target(target)
+
+        if target:
+            message = {
+                "type": "action",
+                "action": action[1:],
+                "target": target_uid,
+                "player": self.main_app.uid,
+            }
+            await self.main_app.websocket.send(json.dumps(message))
+            return ""
+        else:
+            return "That target doesn't exist!"
+
+    @enforce_initialization
+    async def handle_action_without_target(self, action: str) -> str:
+        message = {"type": "action", "action": action[1:], "player": self.main_app.uid}
+        await self.main_app.websocket.send(json.dumps(message))
+        return ""
+
+    def get_target(self, target_name: str) -> int | None:
+        """Gets a target name and then returns the target's UID.
+
+        Returns None if the target name doesn't exist.
+        """
+        return (
+            1  # TODO: this doesn't feel like an UID. TODO: Check if the target exists.
+        )
 
 
 def display_help(all_commands: dict) -> str:

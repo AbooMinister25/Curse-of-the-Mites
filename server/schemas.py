@@ -40,3 +40,20 @@ class RegistrationSuccess(BaseModel):
 
         init_data["data"] = data
         super().__init__(**init_data)
+
+
+class ActionNoTargetRequest(BaseModel):
+    """Request sent by the client when they want to do an action without a target."""
+
+    type: Literal["action"]
+    action: str
+    target: int
+    player: int  # The player that's trying to perform the action.
+
+
+class ActionWithTargetRequest(BaseModel):
+    """Request sent by the client when they want to do an action with a target."""
+
+    type: Literal["action"]
+    action: str
+    player: int  # The player that's trying to perform the action.
