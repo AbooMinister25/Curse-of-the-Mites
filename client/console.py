@@ -189,6 +189,11 @@ class Console(Widget):
                 log_display = "Console output reversed."
             case ["/register", username]:
                 log_display = await self.register(username)
+            case ["!move", direction]:
+                if direction in ["north", "south", "east", "west"]:
+                    log_display = await self.handle_movement(direction)
+                else:
+                    log_display = f"{direction} isn't a direction!"
             case [action, target] if self.message.startswith("!"):
                 log_display = await self.handle_action_with_target(action, target)
             case [action] if self.message.startswith("!"):
@@ -238,6 +243,12 @@ class Console(Widget):
     @enforce_initialization
     async def handle_action_without_target(self, action: str) -> str:
         message = {"type": "action", "action": action[1:], "player": self.main_app.uid}
+        await self.main_app.websocket.send(json.dumps(message))
+        return ""
+
+    @enforce_initialization
+    async def handle_movement(self, direction: str) -> str:
+        message = {"type": "move", "direction": direction, "player": self.main_app.uid}
         await self.main_app.websocket.send(json.dumps(message))
         return ""
 
