@@ -50,8 +50,8 @@ class GameInterface(WebsocketApp):
 
     async def handle_messages(self):
         """Allows receiving messages from a websocket and handling them."""
-        while self.websocket.open:
-            event = deserialize_server_response(json.loads(await self.websocket.recv()))
+        async for message in self.websocket:
+            event = deserialize_server_response(json.loads(message))
             match event:
                 case ChatMessage():
                     self.console_widget.out.add_log(
