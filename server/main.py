@@ -41,7 +41,7 @@ async def initialize_player(connection: WebSocketServerProtocol) -> Player:
         raise InvalidMessage("Expected an `init` message.")
 
     username = event.username
-    player = Player(username, ["spit", "bite"])
+    player = Player(username, ["spit", "bite"], game)
 
     game.add_player(player, 1, 1)
 
@@ -93,11 +93,10 @@ async def handle_action_with_target(
     assert action
 
     if action.requires_target:
-        # TODO: actually do something with the action.
-        response = ActionResponse(
-            type="action_response",
-            response=f"Got it! So you want to {action.name}!",
+        result = game.get_player(req.player).add_command_to_queue(
+            req.action, req.target
         )
+        response = ActionResponse(type="action_response", response=result.message)
     elif action is not None:
         response = ActionResponse(
             type="action_response",
@@ -117,12 +116,10 @@ async def handle_action_without_target(
     action = messed_players[req.player].actions.get(req.action)
     assert action
 
+    response = None
     if not action.requires_target:
-        # TODO: actually do something with the action.
-        response = ActionResponse(
-            type="action_response",
-            response=f"Got it! So you want to {action.name}!",
-        )
+        result = game.get_player(req.player).add_command_to_queue(req.action)
+        response = ActionResponse(type="action_response", response=result.message)
     elif action is not None:
         response = ActionResponse(
             type="action_response",
