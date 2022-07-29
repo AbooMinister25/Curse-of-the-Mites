@@ -90,12 +90,15 @@ async def handler(websocket: WebSocketServerProtocol) -> None:
             case {"type": "action"}:
                 event_unpacked = ActionNoTargetRequest(**event)
                 await handle_action_without_target(event_unpacked, websocket)
+            case _:
+                raise NotImplementedError(f"unknown event type `{event['type']}`")
 
 
 async def handle_action_with_target(
     req: ActionWithTargetRequest, ws: WebSocketServerProtocol
 ):
     action = messed_players[req.player].actions.get(req.action)
+    assert action
 
     if action.requires_target:
         # TODO: actually do something with the action.
@@ -115,9 +118,10 @@ async def handle_action_with_target(
 
 
 async def handle_action_without_target(
-    req: ActionWithTargetRequest, ws: WebSocketServerProtocol
+    req: ActionNoTargetRequest, ws: WebSocketServerProtocol
 ):
     action = messed_players[req.player].actions.get(req.action)
+    assert action
 
     if not action.requires_target:
         # TODO: actually do something with the action.

@@ -1,8 +1,12 @@
-"""This is our bug!"""
+"""This is (one of) our bug(s)!"""
 import copy
 import random
+import typing
 
 from game_components.game_objects import Action, Player
+
+K = typing.TypeVar("K")
+V = typing.TypeVar("V")
 
 
 class MessedPlayer:
@@ -35,8 +39,8 @@ def _mess_up_directions() -> dict[str, str]:
 
 def _mess_up_actions(player: Player) -> dict[str, Action]:
     """Takes the action strings a player can do and assigns them to a different action."""
-    require_target = {}
-    no_target = {}
+    require_target: dict[str, Action] = {}
+    no_target: dict[str, Action] = {}
 
     for name, action in player.allowed_actions.items():
         if action.requires_target:
@@ -49,8 +53,8 @@ def _mess_up_actions(player: Player) -> dict[str, Action]:
     return shuffled_dict(require_target) | shuffled_dict(no_target)
 
 
-def shuffled_dict(dict_: dict) -> dict:
-    """Return a dict with it's keys and values shuffled around."""
+def shuffled_dict(dict_: dict[K, V]) -> dict[K, V]:
+    """Return a dict with its keys and values shuffled around."""
     shuffled_keys = list(dict_)
     random.shuffle(shuffled_keys)
     shuffled_values = list(dict_.values())
