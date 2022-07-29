@@ -6,6 +6,9 @@ import time
 import typing
 from abc import ABC, abstractmethod  # abstract classes
 
+if typing.TYPE_CHECKING:
+    from game import Game
+
 raw_map: list[Tile] = [
     {"x": 0, "y": 0, "type": "wall"},
     {"x": 1, "y": 0, "type": "wall"},
@@ -102,12 +105,13 @@ class Player(Entity):
     level: int
     command_queue: list[dict[str, Entity | None]]
 
-    def __init__(self, _name: str, _allowed_actions: list[str]):
+    def __init__(self, _name: str, _allowed_actions: list[str], game: Game):
         super().__init__(_name, _allowed_actions)
         self.level = 0
         self.command_queue = []
+        self.game = game
 
-    def update(self) -> list[ActionDict] | None:
+    def update(self) -> list[ActionDict] | MovementDict | None:
         """Updates the player for one tick.
 
         Executes the next action in the players queue.
@@ -126,12 +130,20 @@ class Player(Entity):
 
         return result
 
-    def _do(self, command: CommandDict) -> None:
-        movement_commands = ["north", "east", "south", "west", "flee"]
+    def _do(self, command: CommandDict) -> list[ActionDict] | MovementDict | None:
+        movement_commands = ["north", "east", "south", "west"]
 
+        result = None
         # TODO: Tell the player "HEY, YOU DID THIS THING"
         if command["command"] in movement_commands:
-            pass  # TODO: IMPLEMENT MOVEMENT.
+            valid_move = self.game.move_player(self, command["command"])
+            result = {
+                "player": self.uid,
+                "direction": command["command"],
+                "success": valid_move,
+            }
+        elif command["command"] == "flee":
+            pass  # TODO: IMPLEMENT FLEEING.
         else:
             result = self.commit_action(command["command"], command["target"])
 
@@ -715,6 +727,12 @@ class ActionDict(typing.TypedDict):
     hit: bool
     dmg: int
     cast: bool
+
+
+class MovementDict(typing.TypedDict):
+    player: int
+    direction: str
+    success: bool
 
 
 class CommandDict(typing.TypedDict):
