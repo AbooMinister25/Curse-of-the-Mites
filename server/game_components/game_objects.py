@@ -169,6 +169,17 @@ class Player(Entity):
                 return True
 
 
+class TargetsError(Exception):
+    """Exception raised when you try to perform an action with an incorrect number of targets."""
+
+    def __init__(self, action_name: str, needs_target: bool) -> None:
+        s = "requires" if needs_target else "doesn't require"
+        self.message = f"{action_name} {s} a target"
+
+    def __str__(self) -> str:
+        return self.message
+
+
 class Action(ABC):
     __cost: int
     __min_damage: int
@@ -240,87 +251,70 @@ class Action(ABC):
         :param _target: the target(s)
         :return: its a list of what happened. Single target attacks still return a list of dicts
         """
-        if _target is None:
-            assert self.requires_target is False
+        action_list: list[ActionDict] = []
 
-        hit = False
-        cast = False
-        if _caster.mana >= self.__cost:
+        cast = _caster.mana >= self.__cost
+        if cast:
             _caster.mana -= self.__cost
-            cast = True
 
         if _target is None:
-            if self.area_of_effect:
-                action_list: list[ActionDict] = []
-                targets: list[Mob | Player] = []
-                assert _caster.in_room
-                for mob in _caster.in_room.get_mobs():
-                    targets.append(mob)
-                for player in _caster.in_room.get_players():
-                    if player.uid != _caster.uid:
-                        targets.append(player)
-                for entity in targets:
-                    dmg = random.randint(self.__min_damage, self.__max_damage)
-                    if cast:
-                        hit_check = random.randint(0, 100)
-                        if hit_check <= self.__hit_percentage:
-                            hit = True
-                        if hit:
-                            entity.health -= dmg
-                        action_list.append(
-                            {
-                                "caster": _caster.uid,
-                                "target": entity.uid,
-                                "hit": hit,
-                                "dmg": dmg,
-                                "cast": cast,
-                            }
-                        )
-                    else:
-                        action_list.append(
-                            {
-                                "caster": _caster.uid,
-                                "target": entity.uid,
-                                "hit": hit,
-                                "dmg": dmg,
-                                "cast": cast,
-                            }
-                        )
-                return action_list
-            else:
-                _target = _caster
+            if self.requires_target:
+                raise TargetsError(self.name, self.requires_target)
+            action_list = self._no_target_action(cast, _caster)
+        else:
+            if not self.requires_target:
+                raise TargetsError(self.name, self.requires_target)
+            action_list.append(self._action_with_target(cast, _caster, _target))
 
-        if not self.area_of_effect:
-            dmg = random.randint(self.__min_damage, self.__max_damage)
-            if cast:
-                hit_check = random.randint(0, 100)
-                if hit_check <= self.__hit_percentage:
-                    hit = True
-                if hit:
-                    _target.health -= dmg
+        return action_list
 
-                return [
-                    {
-                        "caster": _caster.uid,
-                        "target": _target.uid,
-                        "hit": hit,
-                        "dmg": dmg,
-                        "cast": cast,
-                    }
-                ]
-            else:
-                return [
-                    {
-                        "caster": _caster.uid,
-                        "target": _target.uid,
-                        "hit": hit,
-                        "dmg": dmg,
-                        "cast": cast,
-                    }
-                ]
+    def _no_target_action(self, cast: bool, caster: Entity) -> list[ActionDict]:
+        """Returns the results for either an AOE action or a self targeted action."""
+        action_list: list[ActionDict] = []
+        if self.area_of_effect:
+            assert caster.in_room
+            # Add all entities in the room to the targets.
+            targets: list[Entity] = []
+            for mob in caster.in_room.get_mobs():
+                targets.append(mob)
+            for player in caster.in_room.get_players():
+                # Don't add the casting player to the targets!
+                if player.uid != caster.uid:
+                    targets.append(player)
 
-        # TODO: Missing return
-        raise NotImplementedError("Missing a return")
+            for entity in targets:
+                result = self._action_with_target(cast, caster, entity)
+                action_list.append(result)
+        else:
+            # Self targeted action.
+            target = caster
+            action_list.append(self._action_with_target(cast, caster, target))
+
+        return action_list
+
+    def _action_with_target(
+        self, cast: bool, caster: Entity, target: Entity
+    ) -> ActionDict:
+        dmg = random.randint(self.__min_damage, self.__max_damage)
+        hit_check = random.randint(0, 100)
+        hit = hit_check <= self.__hit_percentage
+
+        result = {
+            "caster": caster.uid,
+            "target": target.uid,
+            "hit": hit,
+            "dmg": dmg,
+            "cast": cast,
+        }
+
+        if cast and hit:
+            Action._perform_action(result, target)
+
+        return result
+
+    @staticmethod
+    def _perform_action(action: ActionDict, target: Entity) -> None:
+        target.health -= action["dmg"]
 
 
 all_actions = {
