@@ -15,6 +15,7 @@ from common.schemas import (
     ActionWithTargetRequest,
     ChatMessage,
     InitializePlayer,
+    MovementRequest,
     PlayerSchema,
     RegistrationSuccessful,
 )
@@ -82,6 +83,8 @@ async def handler(websocket: WebSocketServerProtocol) -> None:
                 await handle_action_with_target(event, websocket)
             case ActionNoTargetRequest():
                 await handle_action_without_target(event, websocket)
+            case MovementRequest():
+                await handle_movement(event, websocket)
             case _:
                 raise NotImplementedError(f"Unknown event {event!r}")
 
@@ -129,6 +132,15 @@ async def handle_action_without_target(
         response = ActionResponse(
             type="action_response", response=f"You can't {req.action}!"
         )
+
+    await ws.send(response.json())
+
+
+async def handle_movement(req: MovementRequest, ws: WebSocketServerProtocol):
+    direction = messed_players[req.player].directions[req.direction]
+    result = game.get_player(req.player).add_command_to_queue(direction)
+
+    response = ActionResponse(type="action_response", response=result.message)
 
     await ws.send(response.json())
 

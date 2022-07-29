@@ -53,6 +53,13 @@ class ActionWithTargetRequest(MessageBase[Literal["action"]]):
     player: int  # The player that's trying to perform the action.
 
 
+class MovementRequest(MessageBase[Literal["move"]]):
+    """Request sent by the client when they want to move."""
+
+    direction: str
+    player: int
+
+
 class ActionResponse(MessageBase[Literal["action_response"]]):
     """Response to an action which the client sent."""
 
@@ -60,7 +67,11 @@ class ActionResponse(MessageBase[Literal["action_response"]]):
 
 
 CLIENT_REQUEST = (
-    ChatMessage | InitializePlayer | ActionNoTargetRequest | ActionWithTargetRequest
+    ChatMessage
+    | InitializePlayer
+    | ActionNoTargetRequest
+    | ActionWithTargetRequest
+    | MovementRequest
 )
 SERVER_RESPONSE = RegistrationSuccessful | ActionResponse | ChatMessage
 MESSAGE = CLIENT_REQUEST | SERVER_RESPONSE
