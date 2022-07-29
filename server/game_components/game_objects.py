@@ -3,9 +3,10 @@ from __future__ import annotations
 import hashlib
 import random
 import time
+import typing
 from abc import ABC, abstractmethod  # abstract classes
 
-raw_map = [
+raw_map: list[Tile] = [
     {"x": 0, "y": 0, "type": "wall"},
     {"x": 1, "y": 0, "type": "wall"},
     {"x": 2, "y": 0, "type": "wall"},
@@ -35,7 +36,13 @@ class Entity(ABC):
     allowed_actions: dict[str, Action]
     in_room: BaseRoom | None
 
-    def __init__(self, _name, _allowed_actions: list[str], _health=100, _mana=100):
+    def __init__(
+        self,
+        _name: str,
+        _allowed_actions: list[str],
+        _health: int = 100,
+        _mana: int = 100,
+    ):
         self.health = _health
         self.max_health = _health
         self.mana = _mana
@@ -82,25 +89,25 @@ class Mob(Entity):
         super().update()
         pass
 
-    def __init__(self, _name, _allowed_actions: list[str]):
+    def __init__(self, _name: str, _allowed_actions: list[str]):
         super().__init__(_name, _allowed_actions)
 
 
 class Player(Entity):
     level: int
-    command_queue: list[dict[str, int | None]]
+    command_queue: list[dict[str, str | int | None]]
 
-    def __init__(self, _name, _allowed_actions: list[str]):
+    def __init__(self, _name: str, _allowed_actions: list[str]):
         super().__init__(_name, _allowed_actions)
         self.level = 0
         self.command_queue = []
 
-    def update(self) -> list[dict] | None:
+    def update(self) -> list[dict[str, str | int | None]] | None:
         directions = ["north", "east", "south", "west"]
         self.mana += 10
         self.health += random.randint(1, 5)
 
-        commands = []
+        commands: list[dict[str, str | int | None]] = []
         while len(self.command_queue) > 0:
             next_command = self.command_queue.pop()
             if self.in_combat:
@@ -119,7 +126,7 @@ class Player(Entity):
 
     def send_events_to_player(self):
         for event in self.events:
-            # SEND EVENTS TO THE PLAYER
+            # TODO: SEND EVENTS TO THE PLAYER
             pass
 
     def add_command_to_queue(self, _command: str, _target: int | None = None) -> bool:
@@ -208,9 +215,7 @@ class Action(ABC):
         self.__hit_percentage = _hit_percentage
         self.name = _name
 
-    def action(self, _caster: Entity, _target: Entity | None) -> list[dict]:
-        if _target is None:
-            assert self.requires_target is False
+    def action(self, _caster: Entity, _target: Entity | None) -> list[ActionDict]:
         """
         Perform an action
 
@@ -235,6 +240,9 @@ class Action(ABC):
         :param _target: the target(s)
         :return: its a list of what happened. Single target attacks still return a list of dicts
         """
+        if _target is None:
+            assert self.requires_target is False
+
         hit = False
         cast = False
         if _caster.mana >= self.__cost:
@@ -243,8 +251,9 @@ class Action(ABC):
 
         if _target is None:
             if self.area_of_effect:
-                action_list = []
-                targets = []
+                action_list: list[ActionDict] = []
+                targets: list[Mob | Player] = []
+                assert _caster.in_room
                 for mob in _caster.in_room.get_mobs():
                     targets.append(mob)
                 for player in _caster.in_room.get_players():
@@ -281,7 +290,7 @@ class Action(ABC):
             else:
                 _target = _caster
 
-        if isinstance(_target, Entity) and (not self.area_of_effect):
+        if not self.area_of_effect:
             dmg = random.randint(self.__min_damage, self.__max_damage)
             if cast:
                 hit_check = random.randint(0, 100)
@@ -310,6 +319,9 @@ class Action(ABC):
                     }
                 ]
 
+        # TODO: Missing return
+        raise NotImplementedError("Missing a return")
+
 
 all_actions = {
     "bite": Action(
@@ -329,10 +341,10 @@ all_actions = {
 
 
 class BaseRoom(ABC):
-    events: list[dict]
+    events: list[object]
     __title: str
     __description: str
-    __linked_rooms: dict[str, BaseRoom | None]
+    __linked_rooms: dict[str, None | BaseRoom]
     __mobs: list[Mob]
     __players: list[Player]
     __display_char: str
@@ -349,7 +361,7 @@ class BaseRoom(ABC):
         _display_char: str,
         _color: tuple[int, int, int],
         _description: str,
-        _linked_rooms: dict,
+        _linked_rooms: dict[str, None | BaseRoom],
         _display_x: int,
         _display_y: int,
     ):
@@ -364,8 +376,8 @@ class BaseRoom(ABC):
         None if the rooms are not set.
         """
         data = (
-            f"{_title}{_description}{_linked_rooms['north']}{_linked_rooms['east']}"
-            f"{_linked_rooms['south']}{_linked_rooms['west']}"
+            f"{_display_x}{_title}{_description}{_linked_rooms['north']}{_linked_rooms['east']}"
+            f"{_display_y}{_linked_rooms['south']}{_linked_rooms['west']}"
         )
         m = hashlib.sha256()
         m.update(data.encode())
@@ -382,12 +394,12 @@ class BaseRoom(ABC):
 
         BaseRoom.number += 1
 
-    def get_display(self) -> dict:
+    def get_display(self) -> DisplayDict:
         """:return: dictionary of `color` and `display_char` for building map"""
         return {"color": self.__color, "display_char": self.__display_char}
 
-    def export(self) -> dict:
-        _mobs = []
+    def export(self) -> ExportedData:
+        _mobs: list[MobData] = []
         for mob in self.__mobs:
             _mobs.append(
                 {
@@ -397,7 +409,7 @@ class BaseRoom(ABC):
                     "max_health": mob.max_health,
                 }
             )
-        _players = []
+        _players: list[PlayerData] = []
         for player in self.__players:
             _players.append(
                 {
@@ -407,7 +419,7 @@ class BaseRoom(ABC):
                     "max_health": player.max_health,
                 }
             )
-        _exits = []
+        _exits: list[ExitData] = []
         for _dir, room in self.__linked_rooms.items():
             if room is not None:
                 _exits.append(
@@ -431,10 +443,10 @@ class BaseRoom(ABC):
             "exits": _exits,
         }
 
-    def set_links(self, links: dict):
+    def set_links(self, links: dict[str, None | BaseRoom]):
         self.__linked_rooms = links
 
-    def get_links(self) -> dict[str, BaseRoom]:
+    def get_links(self) -> dict[str, None | BaseRoom]:
         return self.__linked_rooms
 
     def show_mobs(self) -> str:
@@ -444,7 +456,7 @@ class BaseRoom(ABC):
             ret += f"{str(mob)}\n"
         return ret
 
-    def set_room(self, direction, room_to_add: BaseRoom):
+    def set_room(self, direction: str, room_to_add: BaseRoom):
         self.__linked_rooms[direction] = room_to_add
 
     def show_players(self) -> str:
@@ -518,7 +530,7 @@ class Wall(BaseRoom):
         _display_char: str = "#",
         _color: tuple[int, int, int] = (0, 0, 0),
         _description: str = "How are you reading this",
-        _linked_rooms: dict = None,
+        _linked_rooms: dict[str, None | BaseRoom] | None = None,
     ):
         if _linked_rooms is None:
             _linked_rooms = {"north": None, "east": None, "south": None, "west": None}
@@ -543,7 +555,7 @@ class Hall(BaseRoom):
         _display_char: str = " ",
         _color: tuple[int, int, int] = (0, 0, 0),
         _description: str = "It's a hallway",
-        _linked_rooms: dict = None,
+        _linked_rooms: dict[str, None | BaseRoom] | None = None,
     ):
         if _linked_rooms is None:
             _linked_rooms = {"north": None, "east": None, "south": None, "west": None}
@@ -650,6 +662,61 @@ class Combat:
                     keep = other
                     destroy = self
 
+                assert keep, "combining with same entity?"
+                assert destroy, "combining with same entity?"
                 keep.add_to_combat(destroy.participants)
 
         return combat_to_delete
+
+
+class Tile(typing.TypedDict):
+    x: int
+    y: int
+    type: str
+
+
+class ActionDict(typing.TypedDict):
+    caster: int
+    target: int
+    hit: bool
+    dmg: int
+    cast: bool
+
+
+class DisplayDict(typing.TypedDict):
+    color: tuple[int, int, int]
+    display_char: str
+
+
+class ExportedData(typing.TypedDict):
+    uid: int
+    color: tuple[int, int, int]
+    display_char: str
+    x: int
+    y: int
+    title: str
+    description: str
+    mobs: list[MobData]
+    players: list[PlayerData]
+    exits: list[ExitData]
+
+
+class MobData(typing.TypedDict):
+    uid: int
+    name: str
+    health: int
+    max_health: int
+
+
+class PlayerData(typing.TypedDict):
+    uid: int
+    name: str
+    health: int
+    max_health: int
+
+
+class ExitData(typing.TypedDict):
+    direction: str
+    title: str
+    uid: int
+    can_entity_step: bool

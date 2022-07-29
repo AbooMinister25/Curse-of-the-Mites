@@ -31,7 +31,7 @@ class AvailableCommands(Widget):
             title="Allowed Moves",
         )
 
-    def add_commands(self, commands: list[str]) -> None:
+    def add_commands(self, commands: set[str]) -> None:
         """Adds the given commands to our list of available commands"""
         self.available_commands.extend(commands)
 

@@ -1,5 +1,5 @@
 import asyncio
-from typing import Type
+from typing import Any
 
 import websockets
 from rich.console import Console
@@ -13,12 +13,12 @@ class WebsocketApp(App):
 
     def __init__(
         self,
+        websocket: WebSocketClientProtocol,
         screen: bool = True,
-        driver_class: Type[Driver] | None = None,
+        driver_class: type[Driver] | None = None,
         log: str = "",
         log_verbosity: int = 1,
         title: str = "Textual Application",
-        websocket: WebSocketClientProtocol = None,
     ):
         self.websocket = websocket
         super().__init__(screen, driver_class, log, log_verbosity, title)
@@ -30,17 +30,17 @@ class WebsocketApp(App):
     @classmethod
     def run(
         cls,
-        console: Console = None,
+        console: Console | None = None,
         screen: bool = True,
-        driver: Type[Driver] = None,
-        **kwargs,
+        driver: type[Driver] | None = None,
+        **kwargs: Any,
     ):
         """Run the app.
 
         Args:
             console (Console, optional): Console object. Defaults to None.
             screen (bool, optional): Enable application mode. Defaults to True.
-            driver (Type[Driver], optional): Driver class or None for default. Defaults to None.
+            driver (type[Driver], optional): Driver class or None for default. Defaults to None.
         """
         # TODO: Allow connecting to a specific websocket port.
         async def run_app() -> None:

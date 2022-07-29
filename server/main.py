@@ -4,25 +4,49 @@ import json
 import websockets
 from game_components.game import Game
 from game_components.game_objects import Player
-from schemas import ChatMessage, InitializePlayer, PlayerSchema, RegistrationSuccessful
+from mess_up_actions import MessedPlayer
+from websockets.exceptions import InvalidMessage
 from websockets.legacy.server import WebSocketServerProtocol
+
+from common.schemas import (
+    CLIENT_REQUEST,
+    ActionNoTargetRequest,
+    ActionResponse,
+    ActionWithTargetRequest,
+    ChatMessage,
+    InitializePlayer,
+    PlayerSchema,
+    RegistrationSuccessful,
+)
+from common.serialization import deserialize_client_request
 
 TIME_BETWEEN_ROUNDS = 10  # Seconds between each round.
 
-connections: dict[int, WebSocketServerProtocol] = {}
+connections: dict[
+    int, WebSocketServerProtocol
+] = {}  # Player UID as key and connection as value.
+messed_players: dict[int, MessedPlayer] = {}
 game = Game()
+
+
+def deserialize(message: str | bytes) -> CLIENT_REQUEST:
+    return deserialize_client_request(json.loads(message))
 
 
 async def initialize_player(connection: WebSocketServerProtocol) -> Player:
     """Initializes a player in the game, and returns the initialized player."""
-    message = await connection.recv()
-    event = InitializePlayer.parse_obj(json.loads(message))
+    event = deserialize(await connection.recv())
+
+    if not isinstance(event, InitializePlayer):
+        raise InvalidMessage("Expected an `init` message.")
 
     username = event.username
-    print(message)  # TODO: remove this later.
     player = Player(username, ["spit", "bite"])
 
     game.add_player(player, 1, 1)
+
+    messed_players[player.uid] = MessedPlayer(player)
+
     return player
 
 
@@ -30,13 +54,13 @@ async def register(websocket: WebSocketServerProtocol) -> None:
     """Adds a player's connections to connections and removes them when they disconnect."""
     registered_player = await initialize_player(websocket)
 
-    player_schema = PlayerSchema(
-        uid=registered_player.uid,
-        name=registered_player.name,
-        allowed_actions=set(registered_player.allowed_actions),
-    )
     registration_response = RegistrationSuccessful(
-        type="registration_successful", player=player_schema
+        type="registration_successful",
+        player=PlayerSchema(
+            uid=registered_player.uid,
+            name=registered_player.name,
+            allowed_actions=set(registered_player.allowed_actions),
+        ),
     )
 
     await websocket.send(registration_response.json())
@@ -50,22 +74,66 @@ async def register(websocket: WebSocketServerProtocol) -> None:
 
 async def handler(websocket: WebSocketServerProtocol) -> None:
     async for message in websocket:
-        event = json.loads(message)
-        print(event)  # TODO: remove this later.
-
+        event = deserialize(message)
         match event:
-            case {
-                "type": "chat",
-                "player_name": player_name,
-                "chat_message": chat_message,
-            }:
-                response = ChatMessage(
-                    type="chat",
-                    player_name=player_name,
-                    chat_message=chat_message,
-                )
+            case ChatMessage():
+                websockets.broadcast(connections.values(), event.json())
+            case ActionWithTargetRequest():
+                await handle_action_with_target(event, websocket)
+            case ActionNoTargetRequest():
+                await handle_action_without_target(event, websocket)
+            case _:
+                raise NotImplementedError(f"Unknown event {event!r}")
 
-                websockets.broadcast(connections.values(), response.json())
+
+async def handle_action_with_target(
+    req: ActionWithTargetRequest, ws: WebSocketServerProtocol
+):
+    action = messed_players[req.player].actions.get(req.action)
+    assert action
+
+    if action.requires_target:
+        # TODO: actually do something with the action.
+        response = ActionResponse(
+            type="action_response",
+            response=f"Got it! So you want to {action.name}!",
+        )
+    elif action is not None:
+        response = ActionResponse(
+            type="action_response",
+            response=f"{req.action} doesn't take any targets!",
+        )
+    else:
+        response = ActionResponse(
+            type="action_response", response=f"You can't {req.action}!"
+        )
+
+    await ws.send(response.json())
+
+
+async def handle_action_without_target(
+    req: ActionNoTargetRequest, ws: WebSocketServerProtocol
+):
+    action = messed_players[req.player].actions.get(req.action)
+    assert action
+
+    if not action.requires_target:
+        # TODO: actually do something with the action.
+        response = ActionResponse(
+            type="action_response",
+            response=f"Got it! So you want to {action.name}!",
+        )
+    elif action is not None:
+        response = ActionResponse(
+            type="action_response",
+            response=f"{req.action} needs a target!",
+        )
+    else:
+        response = ActionResponse(
+            type="action_response", response=f"You can't {req.action}!"
+        )
+
+    await ws.send(response.json())
 
 
 async def websocket_handling() -> None:

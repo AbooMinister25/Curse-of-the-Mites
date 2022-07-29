@@ -12,9 +12,9 @@ from game_components.game_objects import (
 
 
 class Game:
-    players: dict[int:Player]
-    mobs: dict[int:Mob]
-    rooms: dict[int:BaseRoom]
+    players: dict[int, Player]
+    mobs: dict[int, Mob]
+    rooms: dict[int, BaseRoom]
     combats: list[Combat]
     start_time: int
 
@@ -26,7 +26,7 @@ class Game:
         self.build_map()
         self.start_time = round(time.time() * 1000)
 
-    def get_room_at(self, x, y) -> BaseRoom | None:
+    def get_room_at(self, x: int, y: int) -> BaseRoom | None:
         temp = None
         for room in self.rooms.values():
             if room.get_map_location() == (x, y):
@@ -56,6 +56,7 @@ class Game:
                 largest_x = room_data["x"]
             if room_data["y"] > largest_y:
                 largest_y = room_data["y"]
+            assert temp, "unknown room type"
             self.rooms[temp.uid] = temp
 
         for y in range(largest_y + 1):
@@ -66,7 +67,7 @@ class Game:
                         current_room = room
                         break
                 if current_room is not None:
-                    directions = {
+                    directions: dict[str, None | BaseRoom] = {
                         "north": None,
                         "east": None,
                         "south": None,
@@ -100,7 +101,7 @@ class Game:
                             continue
                     current_room.set_links(directions)
 
-    def add_player(self, player: Player, target_x, target_y) -> bool:
+    def add_player(self, player: Player, target_x: int, target_y: int) -> bool:
         for room in self.rooms.values():
             if room.can_entity_step:
                 if room.get_map_location() == (target_x, target_y):
@@ -135,7 +136,7 @@ class Game:
                     break
         return player_moved
 
-    def add_mob(self, mob: Mob, target_x, target_y) -> bool:
+    def add_mob(self, mob: Mob, target_x: int, target_y: int) -> bool:
         for room in self.rooms.values():
             if room.can_entity_step:
                 if room.get_map_location() == (target_x, target_y):
@@ -164,6 +165,7 @@ class Game:
         for room in self.rooms.values():
             for player in room.get_players():
                 actions = player.update()
+                assert actions is not None, "returned `None` for actions"
                 # this wont work at all.
                 set([action for action in actions])
 
@@ -175,11 +177,13 @@ if __name__ == "__main__":
     # adding a player to a specific room
     A = Player("xyf", ["bite", "spit"])
     temp = g.get_room_at(1, 1)
+    assert temp, "no room at (1, 1)"
     temp.add_player(A)
 
     # adding a mob
     a = Mob("anta", ["bite"])
     temp = g.get_room_at(1, 1)
+    assert temp, "no room at (1, 1)"
     temp.add_mob(a)
 
     # adding a mob to a map location
