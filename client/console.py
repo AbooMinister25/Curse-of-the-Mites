@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import json
 import typing
 
@@ -12,6 +13,25 @@ from textual.widget import Widget
 
 if typing.TYPE_CHECKING:
     from main import GameInterface
+
+
+P = typing.ParamSpec("P")
+R = typing.TypeVar("R")
+
+
+def enforce_initialization(
+    func: typing.Callable[typing.Concatenate[Console, P], typing.Awaitable[str]]
+) -> typing.Callable[typing.Concatenate[Console, P], typing.Awaitable[str]]:
+    """Simple wrapper that makes sure the player is registered before doing certain actions."""
+
+    @functools.wraps(func)
+    async def wrapper(self: Console, *args: P.args, **kwargs: P.kwargs) -> str:
+        if self.main_app.initialized:
+            return await func(self, *args, **kwargs)
+        else:
+            return "You must register before doing this action."
+
+    return wrapper
 
 
 class ConsoleLog(Widget):
@@ -42,7 +62,7 @@ class ConsoleLog(Widget):
         self.full_log.append(log)
         self.refresh()
 
-    def get_display_logs(self) -> str:
+    def get_display_logs(self) -> list[str]:
         """Returns the logs to be displayed, reversed and/or scrolled if necesary."""
         MAX_LOGS = 7
 
@@ -185,18 +205,6 @@ class Console(Widget):
 
         return ""
 
-    @staticmethod
-    def enforce_initialization(func):
-        """Simple wrapper that makes sure the player is registered before doing certain actions."""
-
-        async def wrapper(self: Console, *args, **kwargs) -> str:
-            if self.main_app.initialized:
-                return await func(self, *args, **kwargs)
-            else:
-                return "You must register before doing this action."
-
-        return wrapper
-
     @enforce_initialization
     async def send_chat_message(self) -> str:
         response = json.dumps(
@@ -241,7 +249,7 @@ class Console(Widget):
         )
 
 
-def display_help(all_commands: dict) -> str:
+def display_help(all_commands: dict[str, str]) -> str:
     """Returns a string with information about all available commands."""
     ret = ""
 

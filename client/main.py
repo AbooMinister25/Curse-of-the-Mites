@@ -7,6 +7,9 @@ from entities import Entities
 from map import Map
 from websocket_app import WebsocketApp
 
+from common.schemas import ActionResponse, ChatMessage, RegistrationSuccessful
+from common.serialization import deserialize_server_response
+
 
 class GameInterface(WebsocketApp):
     """Textual MUD client"""
@@ -48,27 +51,29 @@ class GameInterface(WebsocketApp):
     async def handle_messages(self):
         """Allows receiving messages from a websocket and handling them."""
         while self.websocket.open:
-            message = json.loads(await self.websocket.recv())
-            match message["type"]:
-                case "chat":
+            event = deserialize_server_response(json.loads(await self.websocket.recv()))
+            match event:
+                case ChatMessage():
                     self.console_widget.out.add_log(
-                        f"{message['player_name']}: {message['chat_message']}"
+                        f"{event.player_name}: {event.chat_message}"
                     )
                     self.console_widget.refresh()
-                case "registration_successful":
+                case RegistrationSuccessful():
                     self.initialized = True
-                    self.name = message["player"]["name"]
-                    self.uid = message["player"]["uid"]
+                    self.name = event.player.name
+                    self.uid = event.player.uid
                     self.available_commands_widget.add_commands(
-                        message["player"]["allowed_actions"]
+                        event.player.allowed_actions
                     )
                     self.console_widget.name = self.name
                     self.console_widget.out.add_log(
                         f"Correctly registered as {self.name}"
                     )
                     self.console_widget.refresh()
-                case "action_response":
-                    self.console_widget.out.add_log(message["response"])
+                case ActionResponse():
+                    self.console_widget.out.add_log(event.response)
+                case _:
+                    raise NotImplementedError(f"Unknown event {event!r}")
 
 
 try:

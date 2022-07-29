@@ -9,7 +9,6 @@ python = "^3.10"
 pycryptodome = "^3.15.0"
 cryptography = "^37.0.4"
 websockets = "^10.3"
-pydantic = "^1.9.1"
 # "develop" just means that no need to reinstall deps to get changes
 common = { path = "../common/", develop = true }
 

@@ -8,6 +8,8 @@ authors = ["AbooMinister25 <aboominister@gmail.com>"]
 python = "^3.10"
 textual = "^0.1.18"
 websockets = "^10.3"
+# "develop" just means that no need to reinstall deps to get changes
+common = { path = "../common/", develop = true }
 
 [tool.poetry.dev-dependencies]
 # Base tools
