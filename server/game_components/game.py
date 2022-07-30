@@ -1,14 +1,37 @@
 import time
 
-from game_components.game_objects import (
-    BaseRoom,
-    Combat,
-    Hall,
-    Mob,
-    Player,
-    Wall,
-    raw_map,
-)
+if __name__ == "__main__":
+    from game_objects import (
+        BaseRoom,
+        Combat,
+        LeftLower,
+        LeftTop,
+        Mob,
+        Player,
+        RightLower,
+        RightTop,
+        RoughSide,
+        SpidersDen,
+        TopOfLeaf,
+        Wall,
+        raw_map,
+    )
+else:
+    from game_components.game_objects import (
+        BaseRoom,
+        Combat,
+        LeftLower,
+        LeftTop,
+        Mob,
+        Player,
+        RightLower,
+        RightTop,
+        RoughSide,
+        SpidersDen,
+        TopOfLeaf,
+        Wall,
+        raw_map,
+    )
 
 
 class Game:
@@ -48,15 +71,27 @@ class Game:
         largest_y = 0
         for room_data in raw_map:
             temp = None
-            if room_data["type"] == "hall":
-                temp = Hall(_display_x=room_data["x"], _display_y=room_data["y"])
+            if room_data["type"] == "rs":
+                temp = RoughSide(_display_x=room_data["x"], _display_y=room_data["y"])
             elif room_data["type"] == "wall":
                 temp = Wall(_display_x=room_data["x"], _display_y=room_data["y"])
+            elif room_data["type"] == "ll":
+                temp = LeftLower(_display_x=room_data["x"], _display_y=room_data["y"])
+            elif room_data["type"] == "rl":
+                temp = RightLower(_display_x=room_data["x"], _display_y=room_data["y"])
+            elif room_data["type"] == "rt":
+                temp = RightTop(_display_x=room_data["x"], _display_y=room_data["y"])
+            elif room_data["type"] == "lt":
+                temp = LeftTop(_display_x=room_data["x"], _display_y=room_data["y"])
+            elif room_data["type"] == "sd":
+                temp = SpidersDen(_display_x=room_data["x"], _display_y=room_data["y"])
+            elif room_data["type"] == "tol":
+                temp = TopOfLeaf(_display_x=room_data["x"], _display_y=room_data["y"])
             if room_data["x"] > largest_x:
                 largest_x = room_data["x"]
             if room_data["y"] > largest_y:
                 largest_y = room_data["y"]
-            assert temp, "unknown room type"
+            assert temp, f"unknown room type {room_data['type']}"
             self.rooms[temp.uid] = temp
 
         for y in range(largest_y + 1):
@@ -206,26 +241,26 @@ if __name__ == "__main__":
             print(f"\t{k}: {v}")
     print(temp)
 
-    # Test Combats
-    #
-    # c = Mob("antc", ["bite"])
-    # g.add_mob(c, 1, 1)
-    # # adding a player to a map location
-    # B = Player("aboo", ["stomp", "spit"])
-    # g.add_player(B, 1, 1)
-    # d = Mob("antd",['eat_berry','bite','stomp'])
-    # g.add_mob(d,1,1)
-    # C = Player("baut",['eat_berry','bite','spit'])
-    # combata = Combat([A, a], temp)
-    # combatb = Combat([B, b, c], temp)
-    # combatc = Combat([d, C], temp)
-    # g.combats.append(combata)
-    # g.combats.append(combatb)
-    # g.combats.append(combatc)
-    # for i,combat in enumerate(g.combats):
-    #     print(i,combat)
-    # combatb.add_to_combat(A)
-    # combata.add_to_combat(d)
-    # g.update()
-    # for i,combat in enumerate(g.combats):
-    #     print(i,combat)
+    #    Test Combats
+
+    c = Mob("antc", ["bite"])
+    g.add_mob(c, 1, 1)
+    # adding a player to a map location
+    B = Player("aboo", ["stomp", "spit"])
+    g.add_player(B, 1, 1)
+    d = Mob("antd", ["eat_berry", "bite", "stomp"])
+    g.add_mob(d, 1, 1)
+    C = Player("baut", ["eat_berry", "bite", "spit"])
+    combata = Combat([A, a], temp)
+    combatb = Combat([B, b, c], temp)
+    combatc = Combat([d, C], temp)
+    g.combats.append(combata)
+    g.combats.append(combatb)
+    g.combats.append(combatc)
+    for i, combat in enumerate(g.combats):
+        print(i, combat)
+    combatb.add_to_combat(A)
+    combata.add_to_combat(d)
+    g.update()
+    for i, combat in enumerate(g.combats):
+        print(i, combat)

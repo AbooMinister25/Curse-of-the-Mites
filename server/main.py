@@ -2,8 +2,6 @@ import asyncio
 import json
 
 import websockets
-from game_components.game import Game
-from game_components.game_objects import Player
 from mess_up_actions import MessedPlayer
 from websockets.exceptions import InvalidMessage
 from websockets.legacy.server import WebSocketServerProtocol
@@ -19,6 +17,8 @@ from common.schemas import (
     RegistrationSuccessful,
 )
 from common.serialization import deserialize_client_request
+from game_components.game import Game
+from game_components.game_objects import Player
 
 TIME_BETWEEN_ROUNDS = 10  # Seconds between each round.
 
@@ -152,4 +152,5 @@ async def main() -> None:
     await asyncio.gather(websocket_handling(), game_loop())
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
