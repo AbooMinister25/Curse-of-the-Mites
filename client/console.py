@@ -15,6 +15,7 @@ from common.schemas import (
     ActionWithTargetRequest,
     ChatMessage,
     InitializePlayer,
+    MapRequest,
     MovementRequest,
 )
 
@@ -213,10 +214,13 @@ class Console(Widget):
 
     async def register(self, username: str) -> str:
         """Sends an init request to the server to initialize our player."""
-        request = InitializePlayer(type="init", username=username)
-        await self.main_app.websocket.send(request.json())
-        self.initialized = True
+        p_request = InitializePlayer(type="init", username=username)
+        await self.main_app.websocket.send(p_request.json())
 
+        m_request = MapRequest(type="init_map")
+        await self.main_app.websocket.send(m_request.json())
+
+        self.initialized = True
         return ""
 
     @enforce_initialization

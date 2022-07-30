@@ -7,7 +7,12 @@ from entities import Entities
 from map import Map
 from websocket_app import WebsocketApp
 
-from common.schemas import ActionResponse, ChatMessage, RegistrationSuccessful
+from common.schemas import (
+    ActionResponse,
+    ChatMessage,
+    MapResponse,
+    RegistrationSuccessful,
+)
 from common.serialization import deserialize_server_response
 
 
@@ -70,6 +75,8 @@ class GameInterface(WebsocketApp):
                         f"Correctly registered as {self.name}"
                     )
                     self.console_widget.refresh()
+                case MapResponse():
+                    ...
                 case ActionResponse():
                     self.console_widget.out.add_log(event.response)
                     self.console_widget.refresh()
