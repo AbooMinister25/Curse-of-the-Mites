@@ -7,6 +7,7 @@ if __name__ == "__main__":
     from game_objects import (
         ActionDict,
         BaseRoom,
+        DeathDict,
         FleeDict,
         LeftLower,
         LeftTop,
@@ -26,6 +27,7 @@ else:
     from game_components.game_objects import (
         ActionDict,
         BaseRoom,
+        DeathDict,
         FleeDict,
         LeftLower,
         LeftTop,
@@ -43,6 +45,17 @@ else:
     )
 
 
+OUT_QUEUE = (
+    ActionDict
+    | DeathDict
+    | MovementDict
+    | RoomActionDict
+    | FleeDict
+    | RoomChangeUpdate
+    | int
+)
+
+
 class Game:
     players: dict[int, Player]
     mobs: dict[int, Mob]
@@ -50,14 +63,7 @@ class Game:
     start_time: int
 
     def __init__(self):
-        self.out_queue: Queue[
-            ActionDict
-            | MovementDict
-            | RoomActionDict
-            | FleeDict
-            | RoomChangeUpdate
-            | int
-        ] = Queue()
+        self.out_queue: Queue[OUT_QUEUE] = Queue()
         self.players = {}
         self.mobs = {}
         self.rooms = {}

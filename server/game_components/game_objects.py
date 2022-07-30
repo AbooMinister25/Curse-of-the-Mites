@@ -376,22 +376,30 @@ class Entity(ABC):
         if self.health > self.max_health:
             self.health = self.max_health
 
-        if actions is not None:
-            self._send_updates_to_the_room(actions)
+        self.alive = self.health > 0
+
+        self._send_updates_to_the_room(actions)
         pass
 
     def _send_updates_to_the_room(self, actions: list[ActionDict]) -> None:
         """Adds to the list of updates that must be sent to players in the room."""
         assert self.in_room
-        for action in actions:
-            # Only send successful actions to avoid spamming.
-            if action["cast"] and action["hit"]:
-                full_update: RoomActionDict = {
-                    "type": "room_action",
-                    "room": self.in_room,
-                    "action": action,
-                }
-                self.in_room.events.append(full_update)
+
+        if actions is not None:
+            for action in actions:
+                # Only send successful actions to avoid spamming.
+                if action["cast"] and action["hit"]:
+                    full_update: RoomActionDict = {
+                        "type": "room_action",
+                        "room": self.in_room,
+                        "action": action,
+                    }
+                    self.in_room.events.append(full_update)
+
+        if not self.alive:
+            self.in_room.events.append(
+                {"room_of_death": self.in_room, "deceased": self}
+            )
 
 
 class Mob(Entity):
@@ -745,6 +753,9 @@ all_actions = {
     "spit": Action("spit", 25, 15, 50, 30, True, False, True),
     "eat_berry": Action("eat", 5, -5, -10, 100, False, False, False),
     "annoy": Action("annoy", 0, 1, 1, 100, True, False, True),
+    "obliterate": Action(
+        "obliterate", 0, 1000, 10001, 100, True, False, True
+    ),  # Just for testing :p
 }
 
 
@@ -766,7 +777,7 @@ class BaseRoom(ABC):
     mob_combatants: set[int]
     player_combatants: set[int]
 
-    events: list[RoomActionDict | RoomChangeUpdate]
+    events: list[RoomActionDict | RoomChangeUpdate | DeathDict]
 
     def __init__(
         self,
@@ -1235,3 +1246,8 @@ class FleeDict(typing.TypedDict):
     player: int
     fled: bool
     combat: bool
+
+
+class DeathDict(typing.TypedDict):
+    room_of_death: BaseRoom
+    deceased: Entity

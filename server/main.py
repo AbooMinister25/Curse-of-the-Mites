@@ -6,6 +6,7 @@ from game_components.game import Game, Mob
 from game_components.game_objects import (
     ActionDict,
     BaseRoom,
+    Entity,
     FleeDict,
     MovementDict,
     Player,
@@ -41,6 +42,7 @@ game = Game()
 test_ant = Mob(
     "Test Ant", ["bite"], game
 )  # TODO: find a better place for our trusty test ant.
+test_ant.health = 3
 game.add_mob(test_ant, 24, 16)
 
 
@@ -56,7 +58,7 @@ async def initialize_player(connection: WebSocketServerProtocol) -> Player:
         raise InvalidMessage("Expected an `init` message.")
 
     username = event.username
-    player = Player(username, ["spit", "bite", "annoy"], game)
+    player = Player(username, ["spit", "bite", "annoy", "obliterate"], game)
 
     game.add_player(player, 24, 16)
 
@@ -237,6 +239,11 @@ async def send_updates(out_queue: asyncio.Queue):
                     type="update",
                     message="Time passes by, but you didn't do anything this round!",
                 )
+            case {"room_of_death": room, "deceased": deceased}:
+                player_uids = get_death_update_uids(room, deceased)
+                update = ActionUpdateMessage(
+                    type="update", message=f"`{deceased.name}` died!"
+                )
             case _:
                 # We should probably raise an error here... but it's gonna be fine.
                 # Ignoring errors lead to more features ;)
@@ -313,6 +320,15 @@ def get_room_update_uids(room: BaseRoom, caster_uid: int) -> set:
     uids = {player.uid for player in players if player.uid != caster_uid}
 
     return uids
+
+
+def get_death_update_uids(room: BaseRoom, deceased: Entity) -> set:
+    if isinstance(deceased, Player):
+        # If a player died then tell the entire server!
+        return set(connections.keys())
+    else:
+        # If a mob died, only tell the players in the room.
+        return {player.uid for player in room.get_players()}
 
 
 def get_room_update_message(room_action: RoomActionDict) -> str:
