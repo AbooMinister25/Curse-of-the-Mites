@@ -230,13 +230,17 @@ def get_action_update_message(action: ActionDict) -> str:
     tried = "attack" if action["dmg"] > 0 else "heal"
     health_affected = abs(action["dmg"])
 
+    with_ = f"with `{action['name']}`"
+
     if not action["cast"]:
-        message = f"You tried {tried}ing {target_name} but you don't have mana!"
+        message = (
+            f"You tried {tried}ing {with_} `{target_name}` but you don't have mana!"
+        )
     else:
         if action["hit"]:
-            message = f"You {tried} for {health_affected} hit points!"
+            message = f"You {tried}ed `{target_name}` {with_} for {health_affected} hit points!"
         else:
-            message = f"You tried {tried}ing {target_name} but missed!"
+            message = f"You tried {tried}ing `{target_name}` {with_} but missed!"
 
     return message
 
@@ -266,7 +270,7 @@ def get_room_update_message(room_action: RoomActionDict) -> str:
     did = "attacked" if action["dmg"] > 0 else "healed"
     health_affected = abs(action["dmg"])
 
-    message = f"{caster_name} {did} {target_name} for {health_affected} hit points!"
+    message = f"{caster_name} {did} `{target_name}` for {health_affected} hit points!"
 
     return message
 
