@@ -37,7 +37,7 @@ messed_players: dict[int, MessedPlayer] = {}
 
 game = Game()
 test_ant = Mob(
-    "Test Ant", ["bite"]
+    "Test Ant", ["bite"], game
 )  # TODO: find a better place for our trusty test ant.
 game.add_mob(test_ant, 24, 16)
 

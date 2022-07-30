@@ -396,11 +396,39 @@ class Mob(Entity):
     def update(self):
         self.mana += 7
         self.health += random.randint(1, 3)
-        super().update()
+
+        actions = self._handle_combat()
+        super().update(actions=actions)
         pass
 
-    def __init__(self, _name: str, _allowed_actions: list[str]):
+    def __init__(self, _name: str, _allowed_actions: list[str], game: Game):
+        self.game = game
         super().__init__(_name, _allowed_actions)
+
+    def _handle_combat(self) -> list[ActionDict] | None:
+        """Allows the mob to act if it is in combat."""
+        res = None
+        if self.uid in self.in_room.mob_combatants:
+            if len(self.in_room.player_combatants) == 0:
+                # There are no players left to fight, so stop fighting.
+                self.in_room.mob_combatants.pop(self.uid)
+                self.in_combat = False
+            else:
+                res = self._act_in_combat()
+
+        return res
+
+    def _act_in_combat(self) -> list[ActionDict]:
+        action_choice = random.choice(list(self.allowed_actions.values()))
+        if action_choice.requires_target:
+            target_choice = random.choice(list(self.in_room.player_combatants))
+            res = self.commit_action(
+                action_choice.name, self.game.get_player(target_choice)
+            )
+        else:
+            res = self.commit_action(action_choice.name)
+
+        return res
 
 
 class Player(Entity):

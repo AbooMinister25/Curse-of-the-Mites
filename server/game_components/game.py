@@ -202,6 +202,9 @@ class Game:
                         self.combats.remove(result)
                         break
 
+        for mob_uid in self.mobs:
+            self.mobs[mob_uid].update()
+
         for player_uid in self.players:
             action_performed = self.players[player_uid].update()
             if isinstance(action_performed, list):
