@@ -6,6 +6,9 @@ import time
 import typing
 from abc import ABC, abstractmethod  # abstract classes
 
+if typing.TYPE_CHECKING:
+    from game import Game
+
 raw_map: list[Tile] = [
     {"y": 1, "x": 14, "type": "wall"},
     {"y": 1, "x": 15, "type": "wall"},
@@ -384,80 +387,140 @@ class Mob(Entity):
         super().__init__(_name, _allowed_actions)
 
 
+class AddCommandResult(typing.NamedTuple):
+    success: bool
+    message: str
+
+
 class Player(Entity):
     level: int
-    command_queue: list[dict[str, str | int | None]]
+    command_queue: list[dict[str, Entity | None]]
 
-    def __init__(self, _name: str, _allowed_actions: list[str]):
+    def __init__(self, _name: str, _allowed_actions: list[str], game: Game):
         super().__init__(_name, _allowed_actions)
         self.level = 0
         self.command_queue = []
+        self.game = game
 
-    def update(self) -> list[dict[str, str | int | None]] | None:
-        directions = ["north", "east", "south", "west"]
+    def update(self) -> list[ActionDict] | MovementDict | None:
+        """Updates the player for one tick.
+
+        Executes the next action in the players queue.
+        Returns a list of ActionDicts if the player did something and None if they didn't
+        """
         self.mana += 10
         self.health += random.randint(1, 5)
 
-        commands: list[dict[str, str | int | None]] = []
-        while len(self.command_queue) > 0:
+        result = None
+
+        if len(self.command_queue) > 0:
             next_command = self.command_queue.pop()
-            if self.in_combat:
-                if next_command["command"] not in directions:
-                    commands.append(next_command)
-            if not self.in_combat:
-                # this is wrong too
-                pass
-            if next_command["command"] not in directions:
-                break
+            result = self._do(next_command)
 
         super().update()
-        if len(commands) > 0:
-            return commands
-        return None
+
+        return result
+
+    def _do(self, command: CommandDict) -> list[ActionDict] | MovementDict | None:
+        movement_commands = ["north", "east", "south", "west"]
+
+        result = None
+        # TODO: Tell the player "HEY, YOU DID THIS THING"
+        if command["command"] in movement_commands:
+            valid_move = self.game.move_player(self, command["command"])
+            result = {
+                "player": self.uid,
+                "direction": command["command"],
+                "success": valid_move,
+            }
+        elif command["command"] == "flee":
+            pass  # TODO: IMPLEMENT FLEEING.
+        else:
+            result = self.commit_action(command["command"], command["target"])
+
+        return result
 
     def send_events_to_player(self):
         for event in self.events:
             # TODO: SEND EVENTS TO THE PLAYER
             pass
 
-    def add_command_to_queue(self, _command: str, _target: int | None = None) -> bool:
+    def add_command_to_queue(
+        self, _command: str, _target: Entity | None = None
+    ) -> AddCommandResult:
         """
-        Dammit this is wrong.
+        Adds a command to the player queue if it's valid.
 
         :param _command: flee, north, east, south, west, one of the skills, clear, nvm
-        :param _target: int of entity or list of integers or None
+        :param _target: Entity to be targeted or None.
         :return:
         """
-        valid_commands = [str(e) for e in self.allowed_actions.keys()] + ["flee"]
+        validity = self._check_command_validity(_command, _target)
+
+        if validity.success:
+            event = {"command": _command, "target": _target}
+            self.command_queue.insert(0, event)
+
+        return validity
+
+    def _check_command_validity(
+        self, _command: str, _target: Entity | None = None
+    ) -> AddCommandResult:
+        """
+        Checks that a command is valid.
+
+        :param _command: flee, north, east, south, west, one of the skills, clear, nvm
+        :param _target: Entity to be targeted or None.
+        :return:
+        """
         directions = ["north", "east", "south", "west"]
-        queue_commands = ["clear", "nvm"]
-        valid_commands += directions + queue_commands
-        if _command not in valid_commands:
-            # Give me junk ill give you junk
-            return False
-        if _command in self.allowed_actions.keys():
-            # make sure actions that need a target get a target
-            if self.allowed_actions[_command].requires_target and _target is None:
-                return False
+
         if _command == "flee":
             # you tried to flee but you aren't in combat. idiot.
             if not self.in_combat:
-                return False
+                return AddCommandResult(
+                    False, "Silly, don't try to flee if you aren't in combat!"
+                )
+            else:
+                return AddCommandResult(True, "Added fleeing to your queue!")
         if _command in directions:
             # you tried to move but you are in combat. STOP.
             if self.in_combat:
-                return False
+                return AddCommandResult(
+                    False, "Don't just move like that when you're fighting!"
+                )
+            else:
+                return AddCommandResult(True, f"Moving {_command} added to your queue.")
+        if _command in self.allowed_actions:
+            # make sure actions that need a target get a target
+            if self.allowed_actions[_command].requires_target and _target is None:
+                return AddCommandResult(False, f"{_command} requires a target!")
+            elif (
+                not self.allowed_actions[_command].requires_target
+            ) and _target is not None:
+                return AddCommandResult(False, f"{_command} doesn't require a target!")
         match _command:
             case "clear":
                 self.command_queue = []
-                return True
+                return AddCommandResult(True, "Your queue was erased!")
             case "nvm":
                 self.command_queue = self.command_queue[:-1]
-                return True
+                return AddCommandResult(True, "Last command of the queue erased!")
+            case _ if _command in self.allowed_actions:
+                return AddCommandResult(True, f"{_command} added to your queue.")
             case _:
-                event = {"command": _command, "target": _target}
-                self.command_queue.append(event)
-                return True
+                return AddCommandResult(False, f"You can't do {_command}!")
+
+
+class TargetsError(Exception):
+    """Exception raised when you try to perform an action with an incorrect number of targets."""
+
+    def __init__(self, action_name: str, needs_target: bool) -> None:
+        s = "requires" if needs_target else "doesn't require"
+        self.message = f"{action_name} {s} a target"
+
+    def __str__(self) -> str:
+        return self.message
 
 
 class Action:
@@ -531,87 +594,70 @@ class Action:
         :param _target: the target(s)
         :return: its a list of what happened. Single target attacks still return a list of dicts
         """
-        if _target is None:
-            assert self.requires_target is False
+        action_list: list[ActionDict] = []
 
-        hit = False
-        cast = False
-        if _caster.mana >= self.__cost:
+        cast = _caster.mana >= self.__cost
+        if cast:
             _caster.mana -= self.__cost
-            cast = True
 
         if _target is None:
-            if self.area_of_effect:
-                action_list: list[ActionDict] = []
-                targets: list[Mob | Player] = []
-                assert _caster.in_room
-                for mob in _caster.in_room.get_mobs():
-                    targets.append(mob)
-                for player in _caster.in_room.get_players():
-                    if player.uid != _caster.uid:
-                        targets.append(player)
-                for entity in targets:
-                    dmg = random.randint(self.__min_damage, self.__max_damage)
-                    if cast:
-                        hit_check = random.randint(0, 100)
-                        if hit_check <= self.__hit_percentage:
-                            hit = True
-                        if hit:
-                            entity.health -= dmg
-                        action_list.append(
-                            {
-                                "caster": _caster.uid,
-                                "target": entity.uid,
-                                "hit": hit,
-                                "dmg": dmg,
-                                "cast": cast,
-                            }
-                        )
-                    else:
-                        action_list.append(
-                            {
-                                "caster": _caster.uid,
-                                "target": entity.uid,
-                                "hit": hit,
-                                "dmg": dmg,
-                                "cast": cast,
-                            }
-                        )
-                return action_list
-            else:
-                _target = _caster
+            if self.requires_target:
+                raise TargetsError(self.name, self.requires_target)
+            action_list = self._no_target_action(cast, _caster)
+        else:
+            if not self.requires_target:
+                raise TargetsError(self.name, self.requires_target)
+            action_list.append(self._action_with_target(cast, _caster, _target))
 
-        if not self.area_of_effect:
-            dmg = random.randint(self.__min_damage, self.__max_damage)
-            if cast:
-                hit_check = random.randint(0, 100)
-                if hit_check <= self.__hit_percentage:
-                    hit = True
-                if hit:
-                    _target.health -= dmg
+        return action_list
 
-                return [
-                    {
-                        "caster": _caster.uid,
-                        "target": _target.uid,
-                        "hit": hit,
-                        "dmg": dmg,
-                        "cast": cast,
-                    }
-                ]
-            else:
-                return [
-                    {
-                        "caster": _caster.uid,
-                        "target": _target.uid,
-                        "hit": hit,
-                        "dmg": dmg,
-                        "cast": cast,
-                    }
-                ]
+    def _no_target_action(self, cast: bool, caster: Entity) -> list[ActionDict]:
+        """Returns the results for either an AOE action or a self targeted action."""
+        action_list: list[ActionDict] = []
+        if self.area_of_effect:
+            assert caster.in_room
+            # Add all entities in the room to the targets.
+            targets: list[Entity] = []
+            for mob in caster.in_room.get_mobs():
+                targets.append(mob)
+            for player in caster.in_room.get_players():
+                # Don't add the casting player to the targets!
+                if player.uid != caster.uid:
+                    targets.append(player)
 
-        # TODO: Missing return
-        raise NotImplementedError("Missing a return")
+            for entity in targets:
+                result = self._action_with_target(cast, caster, entity)
+                action_list.append(result)
+        else:
+            # Self targeted action.
+            target = caster
+            action_list.append(self._action_with_target(cast, caster, target))
+
+        return action_list
+
+    def _action_with_target(
+        self, cast: bool, caster: Entity, target: Entity
+    ) -> ActionDict:
+        dmg = random.randint(self.__min_damage, self.__max_damage)
+        hit_check = random.randint(0, 100)
+        hit = hit_check <= self.__hit_percentage
+
+        result = {
+            "caster": caster.uid,
+            "target": target.uid,
+            "hit": hit,
+            "dmg": dmg,
+            "cast": cast,
+        }
+
+        if cast and hit:
+            Action._perform_action(result, target)
+
+        return result
+
+    @staticmethod
+    def _perform_action(action: ActionDict, target: Entity) -> None:
+        target.health -= action["dmg"]
 
 
 all_actions = {
@@ -1124,6 +1170,17 @@ class ActionDict(typing.TypedDict):
     hit: bool
     dmg: int
     cast: bool
+
+
+class MovementDict(typing.TypedDict):
+    player: int
+    direction: str
+    success: bool
+
+
+class CommandDict(typing.TypedDict):
+    command: str
+    target: Entity
 
 
 class DisplayDict(typing.TypedDict):

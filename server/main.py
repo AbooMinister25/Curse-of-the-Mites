@@ -2,6 +2,8 @@ import asyncio
 import json
 
 import websockets
+from game_components.game import Game
+from game_components.game_objects import Player
 from mess_up_actions import MessedPlayer
 from websockets.exceptions import InvalidMessage
 from websockets.legacy.server import WebSocketServerProtocol
@@ -13,12 +15,11 @@ from common.schemas import (
     ActionWithTargetRequest,
     ChatMessage,
     InitializePlayer,
+    MovementRequest,
     PlayerSchema,
     RegistrationSuccessful,
 )
 from common.serialization import deserialize_client_request
-from game_components.game import Game
-from game_components.game_objects import Player
 
 TIME_BETWEEN_ROUNDS = 10  # Seconds between each round.
 
@@ -41,7 +42,7 @@ async def initialize_player(connection: WebSocketServerProtocol) -> Player:
         raise InvalidMessage("Expected an `init` message.")
 
     username = event.username
-    player = Player(username, ["spit", "bite"])
+    player = Player(username, ["spit", "bite"], game)
 
     game.add_player(player, 1, 1)
 
@@ -82,6 +83,8 @@ async def handler(websocket: WebSocketServerProtocol) -> None:
                 await handle_action_with_target(event, websocket)
             case ActionNoTargetRequest():
                 await handle_action_without_target(event, websocket)
+            case MovementRequest():
+                await handle_movement(event, websocket)
             case _:
                 raise NotImplementedError(f"Unknown event {event!r}")
 
@@ -90,22 +93,20 @@ async def handle_action_with_target(
     req: ActionWithTargetRequest, ws: WebSocketServerProtocol
 ):
     action = messed_players[req.player].actions.get(req.action)
-    assert action
 
-    if action.requires_target:
-        # TODO: actually do something with the action.
+    if action is None:
         response = ActionResponse(
-            type="action_response",
-            response=f"Got it! So you want to {action.name}!",
+            type="action_response", response=f"You can't {req.action}!"
         )
-    elif action is not None:
+    elif action.requires_target:
+        result = game.get_player(req.player).add_command_to_queue(
+            req.action, req.target
+        )
+        response = ActionResponse(type="action_response", response=result.message)
+    else:
         response = ActionResponse(
             type="action_response",
             response=f"{req.action} doesn't take any targets!",
-        )
-    else:
-        response = ActionResponse(
-            type="action_response", response=f"You can't {req.action}!"
         )
 
     await ws.send(response.json())
@@ -115,23 +116,29 @@ async def handle_action_without_target(
     req: ActionNoTargetRequest, ws: WebSocketServerProtocol
 ):
     action = messed_players[req.player].actions.get(req.action)
-    assert action
 
-    if not action.requires_target:
-        # TODO: actually do something with the action.
+    response = None
+    if action is None:
         response = ActionResponse(
-            type="action_response",
-            response=f"Got it! So you want to {action.name}!",
+            type="action_response", response=f"You can't {req.action}!"
         )
-    elif action is not None:
+    elif not action.requires_target:
+        result = game.get_player(req.player).add_command_to_queue(req.action)
+        response = ActionResponse(type="action_response", response=result.message)
+    else:
         response = ActionResponse(
             type="action_response",
             response=f"{req.action} needs a target!",
         )
-    else:
-        response = ActionResponse(
-            type="action_response", response=f"You can't {req.action}!"
-        )
+
+    await ws.send(response.json())
+
+
+async def handle_movement(req: MovementRequest, ws: WebSocketServerProtocol):
+    direction = messed_players[req.player].directions[req.direction]
+    result = game.get_player(req.player).add_command_to_queue(direction)
+
+    response = ActionResponse(type="action_response", response=result.message)
 
     await ws.send(response.json())
 
