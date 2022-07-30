@@ -6,10 +6,16 @@ if __name__ == "__main__":
         ActionDict,
         BaseRoom,
         Combat,
-        Hall,
+        LeftLower,
+        LeftTop,
         Mob,
         MovementDict,
         Player,
+        RightLower,
+        RightTop,
+        RoughSide,
+        SpidersDen,
+        TopOfLeaf,
         Wall,
         raw_map,
     )
@@ -18,10 +24,16 @@ else:
         ActionDict,
         BaseRoom,
         Combat,
-        Hall,
+        LeftLower,
+        LeftTop,
         Mob,
         MovementDict,
         Player,
+        RightLower,
+        RightTop,
+        RoughSide,
+        SpidersDen,
+        TopOfLeaf,
         Wall,
         raw_map,
     )
@@ -65,15 +77,27 @@ class Game:
         largest_y = 0
         for room_data in raw_map:
             temp = None
-            if room_data["type"] == "hall":
-                temp = Hall(_display_x=room_data["x"], _display_y=room_data["y"])
+            if room_data["type"] == "rs":
+                temp = RoughSide(_display_x=room_data["x"], _display_y=room_data["y"])
             elif room_data["type"] == "wall":
                 temp = Wall(_display_x=room_data["x"], _display_y=room_data["y"])
+            elif room_data["type"] == "ll":
+                temp = LeftLower(_display_x=room_data["x"], _display_y=room_data["y"])
+            elif room_data["type"] == "rl":
+                temp = RightLower(_display_x=room_data["x"], _display_y=room_data["y"])
+            elif room_data["type"] == "rt":
+                temp = RightTop(_display_x=room_data["x"], _display_y=room_data["y"])
+            elif room_data["type"] == "lt":
+                temp = LeftTop(_display_x=room_data["x"], _display_y=room_data["y"])
+            elif room_data["type"] == "sd":
+                temp = SpidersDen(_display_x=room_data["x"], _display_y=room_data["y"])
+            elif room_data["type"] == "tol":
+                temp = TopOfLeaf(_display_x=room_data["x"], _display_y=room_data["y"])
             if room_data["x"] > largest_x:
                 largest_x = room_data["x"]
             if room_data["y"] > largest_y:
                 largest_y = room_data["y"]
-            assert temp, "unknown room type"
+            assert temp, f"unknown room type {room_data['type']}"
             self.rooms[temp.uid] = temp
 
         for y in range(largest_y + 1):
