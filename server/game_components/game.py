@@ -34,6 +34,22 @@ else:
     )
 
 
+ROOMS_MAP = {
+    "rs": RoughSide,
+    "wall": Wall,
+    "ll": LeftLower,
+    "rl": RightLower,
+    "rt": RightTop,
+    "lt": LeftTop,
+    "sd": SpidersDen,
+    "tol": TopOfLeaf,
+}
+
+
+class InvalidRoomError(Exception):
+    ...
+
+
 class Game:
     players: dict[int, Player]
     mobs: dict[int, Mob]
@@ -70,28 +86,18 @@ class Game:
         largest_x = 0
         largest_y = 0
         for room_data in raw_map:
-            temp = None
-            if room_data["type"] == "rs":
-                temp = RoughSide(_display_x=room_data["x"], _display_y=room_data["y"])
-            elif room_data["type"] == "wall":
-                temp = Wall(_display_x=room_data["x"], _display_y=room_data["y"])
-            elif room_data["type"] == "ll":
-                temp = LeftLower(_display_x=room_data["x"], _display_y=room_data["y"])
-            elif room_data["type"] == "rl":
-                temp = RightLower(_display_x=room_data["x"], _display_y=room_data["y"])
-            elif room_data["type"] == "rt":
-                temp = RightTop(_display_x=room_data["x"], _display_y=room_data["y"])
-            elif room_data["type"] == "lt":
-                temp = LeftTop(_display_x=room_data["x"], _display_y=room_data["y"])
-            elif room_data["type"] == "sd":
-                temp = SpidersDen(_display_x=room_data["x"], _display_y=room_data["y"])
-            elif room_data["type"] == "tol":
-                temp = TopOfLeaf(_display_x=room_data["x"], _display_y=room_data["y"])
+            try:
+                temp = ROOMS_MAP[room_data["type"]](
+                    _display_x=room_data["x"], _display_y=room_data["y"]
+                )
+            except KeyError:
+                raise InvalidRoomError(f"Unknown room type {room_data['type']}")
+
             if room_data["x"] > largest_x:
                 largest_x = room_data["x"]
             if room_data["y"] > largest_y:
                 largest_y = room_data["y"]
-            assert temp, f"unknown room type {room_data['type']}"
+
             self.rooms[temp.uid] = temp
 
         for y in range(largest_y + 1):

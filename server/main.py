@@ -44,7 +44,7 @@ async def initialize_player(connection: WebSocketServerProtocol) -> Player:
     username = event.username
     player = Player(username, ["spit", "bite"], game)
 
-    game.add_player(player, 1, 1)
+    game.add_player(player, 24, 16)
 
     messed_players[player.uid] = MessedPlayer(player)
 
