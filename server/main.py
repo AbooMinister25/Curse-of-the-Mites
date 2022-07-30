@@ -4,7 +4,7 @@ import json
 import websockets
 from game_components.game import Game
 from game_components.game_objects import ActionDict, Player
-from mess_up_actions import MessedPlayer
+from mess_up_actions import NO_SHUFFLE, MessedPlayer
 from websockets.exceptions import InvalidMessage
 from websockets.legacy.server import WebSocketServerProtocol
 
@@ -120,7 +120,11 @@ async def handle_action_without_target(
     action = messed_players[req.player].actions.get(req.action)
 
     response = None
-    if action is None:
+    if req.action in NO_SHUFFLE:
+        result = game.get_player(req.player).add_command_to_queue(req.action)
+        print(result.message)
+        response = ActionResponse(type="action_response", response=result.message)
+    elif action is None:
         response = ActionResponse(
             type="action_response", response=f"You can't {req.action}!"
         )

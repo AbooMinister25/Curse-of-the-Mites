@@ -221,10 +221,12 @@ class Player(Entity):
         match _command:
             case "clear":
                 self.command_queue = []
-                return AddCommandResult(True, "Your queue was erased!")
+                # We did something but there's nothing to queue, so we return false.
+                return AddCommandResult(False, "Your queue was erased!")
             case "nvm":
                 self.command_queue = self.command_queue[:-1]
-                return AddCommandResult(True, "Last command of the queue erased!")
+                # We did something but there's nothing to queue, so we return false.
+                return AddCommandResult(False, "Last command of the queue erased!")
             case _ if _command in self.allowed_actions:
                 return AddCommandResult(True, f"{_command} added to your queue.")
             case _:
