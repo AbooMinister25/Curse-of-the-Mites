@@ -159,4 +159,5 @@ async def main() -> None:
     await asyncio.gather(websocket_handling(), game_loop())
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
