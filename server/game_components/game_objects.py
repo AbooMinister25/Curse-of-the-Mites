@@ -368,12 +368,28 @@ class Entity(ABC):
         return f"{str(self.uid)[0:4]} {status} {self.__class__.__name__} {self.name} {moves}"
 
     @abstractmethod
-    def update(self):
+    def update(self, actions: list[ActionDict] | None = None):
         if self.mana > self.max_mana:
             self.mana = self.max_mana
         if self.health > self.max_health:
             self.health = self.max_health
+
+        if actions is not None:
+            self._send_updates_to_the_room(actions)
         pass
+
+    def _send_updates_to_the_room(self, actions: list[ActionDict]) -> None:
+        """Adds to the list of updates that must be sent to players in the room."""
+        assert self.in_room
+        for action in actions:
+            # Only send successful actions to avoid spamming.
+            if action["cast"] and action["hit"]:
+                full_update: RoomActionDict = {
+                    "type": "room_action",
+                    "room": self.in_room,
+                    "action": action,
+                }
+                self.in_room.events.append(full_update)
 
 
 class Mob(Entity):
@@ -417,7 +433,10 @@ class Player(Entity):
             next_command = self.command_queue.pop()
             result = self._do(next_command)
 
-        super().update()
+        if isinstance(result, list):
+            super().update(actions=result)
+        else:
+            super().update()
 
         return result
 
@@ -676,6 +695,7 @@ all_actions = {
     "stomp": Action("stomp", 15, 5, 15, 70, False, True, True),
     "spit": Action("spit", 25, 15, 50, 30, True, False, True),
     "eat_berry": Action("eat", 5, -5, -10, 100, False, False, False),
+    "annoy": Action("annoy", 0, 1, 1, 100, True, False, True),
 }
 
 
@@ -694,6 +714,8 @@ class BaseRoom(ABC):
     display_x: int
     display_y: int
     can_entity_step: bool
+
+    events: list[RoomActionDict]
 
     def __init__(
         self,
@@ -731,6 +753,8 @@ class BaseRoom(ABC):
         self.__players = []
         self.display_x = _display_x
         self.display_y = _display_y
+
+        self.events = []
 
         BaseRoom.number += 1
 
@@ -1222,3 +1246,9 @@ class ExitData(typing.TypedDict):
     title: str
     uid: int
     can_entity_step: bool
+
+
+class RoomActionDict(typing.TypedDict):
+    type: str
+    room: BaseRoom
+    action: ActionDict

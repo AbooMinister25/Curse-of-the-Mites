@@ -13,6 +13,7 @@ if __name__ == "__main__":
         Player,
         RightLower,
         RightTop,
+        RoomActionDict,
         RoughSide,
         SpidersDen,
         TopOfLeaf,
@@ -31,6 +32,7 @@ else:
         Player,
         RightLower,
         RightTop,
+        RoomActionDict,
         RoughSide,
         SpidersDen,
         TopOfLeaf,
@@ -47,7 +49,9 @@ class Game:
     start_time: int
 
     def __init__(self):
-        self.out_queue: Queue[ActionDict | MovementDict | int] = Queue()
+        self.out_queue: Queue[
+            ActionDict | MovementDict | RoomActionDict | int
+        ] = Queue()
         self.players = {}
         self.mobs = {}
         self.rooms = {}
@@ -194,6 +198,15 @@ class Game:
                     if result is not None:
                         self.combats.remove(result)
                         break
+
+        for room_uid in self.rooms:
+            for event in self.rooms[room_uid].events:
+                await self.out_queue.put(event)
+            self.rooms[
+                room_uid
+            ].events = (
+                []
+            )  # If an event was missed for whatever reason... to bad... it's a feature!
 
         for player_uid in self.players:
             action_performed = self.players[player_uid].update()

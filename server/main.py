@@ -3,7 +3,7 @@ import json
 
 import websockets
 from game_components.game import Game
-from game_components.game_objects import ActionDict, Player
+from game_components.game_objects import ActionDict, Player, RoomActionDict
 from mess_up_actions import NO_SHUFFLE, MessedPlayer
 from websockets.exceptions import InvalidMessage
 from websockets.legacy.server import WebSocketServerProtocol
@@ -44,9 +44,9 @@ async def initialize_player(connection: WebSocketServerProtocol) -> Player:
         raise InvalidMessage("Expected an `init` message.")
 
     username = event.username
-    player = Player(username, ["spit", "bite"], game)
+    player = Player(username, ["spit", "bite", "annoy"], game)
 
-    game.add_player(player, 1, 1)
+    game.add_player(player, 24, 16)
 
     messed_players[player.uid] = MessedPlayer(player)
 
@@ -122,7 +122,6 @@ async def handle_action_without_target(
     response = None
     if req.action in NO_SHUFFLE:
         result = game.get_player(req.player).add_command_to_queue(req.action)
-        print(result.message)
         response = ActionResponse(type="action_response", response=result.message)
     elif action is None:
         response = ActionResponse(
@@ -171,34 +170,55 @@ async def send_updates(out_queue: asyncio.Queue):
     while not out_queue.empty():
         action = await out_queue.get()
         update: ActionUpdateMessage()
-        player_uid: int
+        player_uids: int | set
         match action:
             case {"caster": uid}:
-                player_uid = uid
+                player_uids = uid
                 update = ActionUpdateMessage(
                     type="update", message=get_action_update_message(action)
                 )
             case {"player": uid, "direction": direction, "success": success}:
-                player_uid = uid
+                player_uids = uid
                 succeed = "succeed!" if success else "fail!"
                 update = ActionUpdateMessage(
                     type="update",
                     message=f"You try moving {direction}... and {succeed}",
                 )
+            case {"type": "room_action"}:
+                player_uids = get_room_update_uids(action)
+                update = ActionUpdateMessage(
+                    type="update", message=get_room_update_message(action)
+                )
             case int():
-                player_uid = action
+                player_uids = action
                 update = ActionUpdateMessage(
                     type="update",
                     message="Time passes by, but you didn't do anything this round!",
                 )
-        player_connection = connections.get(player_uid)
-        if player_connection is not None:
-            await player_connection.send(update.json())
-        # else: player disconnected.
+
+        match player_uids:
+            case int():
+                # Send to a single player.
+                player_connection = connections.get(player_uids)
+                if player_connection is not None:
+                    await player_connection.send(update.json())
+                # else: player disconnected.
+            case set():
+                # Broadcast to multiple players.
+                player_connections = {
+                    connections.get(player_uid)
+                    for player_uid in player_uids
+                    if connections.get(player_uid) is not None
+                }
+                websockets.broadcast(player_connections, update.json())
 
 
 def get_action_update_message(action: ActionDict) -> str:
-    """A big mess to get a proper message for the action!"""
+    """
+    This is the message to be displayed to the player that cast this action.
+
+    A big mess to get a proper message for the action!
+    """
     target = game.get_mob(action["target"]) or game.get_player(action["target"])
     target_name = "yourself" if action["target"] == action["caster"] else target.name
     assert target
@@ -213,6 +233,36 @@ def get_action_update_message(action: ActionDict) -> str:
             message = f"You {tried} for {health_affected} hit points!"
         else:
             message = f"You tried {tried}ing {target_name} but missed!"
+
+    return message
+
+
+def get_room_update_uids(room_action: RoomActionDict) -> set:
+    """Returns the uids of every player in the room except the caster."""
+    players = room_action["room"].get_players()
+    uids = {
+        player.uid
+        for player in players
+        if player.uid != room_action["action"]["caster"]
+    }
+
+    return uids
+
+
+def get_room_update_message(room_action: RoomActionDict) -> str:
+    """This is the message to be displayed to the players in the action that this room happened."""
+    RoomActionDict()
+    action: ActionDict = room_action["action"]
+
+    caster = game.get_player(action["caster"]) or game.get_mob(action["caster"])
+    caster_name = caster.name
+    target = game.get_mob(action["target"]) or game.get_player(action["target"])
+    target_name = "themselves" if action["target"] == action["caster"] else target.name
+
+    did = "attacked" if action["dmg"] > 0 else "healed"
+    health_affected = abs(action["dmg"])
+
+    message = f"{caster_name} {did} {target_name} for {health_affected} hit points!"
 
     return message
 
