@@ -121,7 +121,7 @@ class Player(Entity):
         self.command_queue = []
         self.game = game
 
-    def update(self) -> list[ActionDict] | MovementDict | None:
+    def update(self) -> list[ActionDict] | MovementDict | int:
         """Updates the player for one tick.
 
         Executes the next action in the players queue.
@@ -130,7 +130,7 @@ class Player(Entity):
         self.mana += 10
         self.health += random.randint(1, 5)
 
-        result = None
+        result = self.uid  # If we didn't do anything, return our UID anyways.
 
         if len(self.command_queue) > 0:
             next_command = self.command_queue.pop()

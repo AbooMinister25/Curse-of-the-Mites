@@ -6,6 +6,7 @@ from .schemas import (
     SERVER_RESPONSE,
     ActionNoTargetRequest,
     ActionResponse,
+    ActionUpdateMessage,
     ActionWithTargetRequest,
     ChatMessage,
     InitializePlayer,
@@ -41,6 +42,8 @@ def deserialize_server_response(event: dict[str, typing.Any]) -> SERVER_RESPONSE
             return RegistrationSuccessful(**event)
         case {"type": "action_response"}:
             return ActionResponse(**event)
+        case {"type": "update"}:
+            return ActionUpdateMessage(**event)
         case _:
             raise NotImplementedError(f"unknown event type `{event['type']}`")
 

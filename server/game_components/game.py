@@ -1,13 +1,26 @@
 import time
+from asyncio import Queue
 
 if __name__ == "__main__":
-    from game_objects import BaseRoom, Combat, Hall, Mob, Player, Wall, raw_map
-else:
-    from game_components.game_objects import (
+    from game_objects import (
+        ActionDict,
         BaseRoom,
         Combat,
         Hall,
         Mob,
+        MovementDict,
+        Player,
+        Wall,
+        raw_map,
+    )
+else:
+    from game_components.game_objects import (
+        ActionDict,
+        BaseRoom,
+        Combat,
+        Hall,
+        Mob,
+        MovementDict,
         Player,
         Wall,
         raw_map,
@@ -22,6 +35,7 @@ class Game:
     start_time: int
 
     def __init__(self):
+        self.out_queue: Queue[ActionDict | MovementDict | int] = Queue()
         self.players = {}
         self.mobs = {}
         self.rooms = {}
@@ -147,7 +161,7 @@ class Game:
         else:
             return False
 
-    def update(self):
+    async def update(self):
         # REDUCE COMBATS
         for i, _e in enumerate(self.combats):
             for j, _f in enumerate(self.combats):
@@ -158,7 +172,12 @@ class Game:
                         break
 
         for player_uid in self.players:
-            self.players[player_uid].update()
+            action_performed = self.players[player_uid].update()
+            if isinstance(action_performed, list):
+                for action in action_performed:
+                    await self.out_queue.put(action)
+            else:
+                await self.out_queue.put(action_performed)
 
 
 if __name__ == "__main__":

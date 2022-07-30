@@ -66,6 +66,15 @@ class ActionResponse(MessageBase[Literal["action_response"]]):
     response: str
 
 
+class ActionUpdateMessage(MessageBase[Literal["update"]]):
+    """Message sent by the server after a game ticks.
+
+    It contains a message to be displayed about the result of the player's queued action.
+    """
+
+    message: str
+
+
 CLIENT_REQUEST = (
     ChatMessage
     | InitializePlayer
@@ -73,5 +82,7 @@ CLIENT_REQUEST = (
     | ActionWithTargetRequest
     | MovementRequest
 )
-SERVER_RESPONSE = RegistrationSuccessful | ActionResponse | ChatMessage
+SERVER_RESPONSE = (
+    RegistrationSuccessful | ActionResponse | ChatMessage | ActionUpdateMessage
+)
 MESSAGE = CLIENT_REQUEST | SERVER_RESPONSE
