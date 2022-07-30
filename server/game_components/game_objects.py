@@ -413,7 +413,7 @@ class Player(Entity):
         self.command_queue = []
         self.game = game
 
-    def update(self) -> list[ActionDict] | MovementDict | int:
+    def update(self) -> list[ActionDict] | FleeDict | MovementDict | int:
         """Updates the player for one tick.
 
         Executes the next action in the players queue.
@@ -437,7 +437,9 @@ class Player(Entity):
         self._check_combat_end()
         return result
 
-    def _do(self, command: CommandDict) -> list[ActionDict] | MovementDict | None:
+    def _do(
+        self, command: CommandDict
+    ) -> list[ActionDict] | MovementDict | FleeDict | None:
         movement_commands = ["north", "east", "south", "west"]
 
         result = None
@@ -455,6 +457,7 @@ class Player(Entity):
                 "reason": reason,
             }
         elif command["command"] == "flee":
+            result = self._try_fleeing()
             pass  # TODO: IMPLEMENT FLEEING.
         else:
             result = self.commit_action(command["command"], command["target"])
@@ -481,6 +484,19 @@ class Player(Entity):
             # If you're engaged in combat and there's still mob combatants in the room,
             # then you don't exit combat automatically.
             self.in_combat = len(self.in_room.mob_combatants) > 0
+
+    def _try_fleeing(self) -> FleeDict:
+        FLEEING_CHANCE = 35  # Percent
+        success = False
+        was_in_combat = self.in_combat
+        if was_in_combat:
+            success = random.randint(1, 100) <= FLEEING_CHANCE
+            self.in_combat = not success
+
+        if success:
+            self.in_room.player_combatants.remove(self.uid)
+
+        return {"player": self.uid, "fled": success, "combat": was_in_combat}
 
     def add_command_to_queue(
         self, _command: str, _target: Entity | None = None
@@ -510,20 +526,8 @@ class Player(Entity):
         :param _target: Entity to be targeted or None.
         :return:
         """
-        directions = ["north", "east", "south", "west"]
+        directions = ["north", "east", "south", "west", "flee"]
 
-        if _command == "flee":
-            # you tried to flee but you aren't in combat. idiot.
-            if not self.in_combat:
-                return False
-            else:
-                return True
-        if _command in directions:
-            # you tried to move but you are in combat. STOP.
-            if self.in_combat:
-                return True
-            else:
-                return True
         if _command in self.allowed_actions:
             # make sure actions that need a target get a target
             if self.allowed_actions[_command].requires_target and _target is None:
@@ -532,6 +536,7 @@ class Player(Entity):
                 not self.allowed_actions[_command].requires_target
             ) and _target is not None:
                 return False
+
         match _command:
             case "clear":
                 self.command_queue = []
@@ -541,10 +546,8 @@ class Player(Entity):
                 self.command_queue = self.command_queue[:-1]
                 # We did something but there's nothing to queue, so we return false.
                 return False
-            case _ if _command in self.allowed_actions:
-                return True
             case _:
-                return False
+                return _command in directions or _command in self.allowed_actions
 
 
 class TargetsError(Exception):
@@ -1275,3 +1278,9 @@ class RoomActionDict(typing.TypedDict):
     type: str
     room: BaseRoom
     action: ActionDict
+
+
+class FleeDict(typing.TypedDict):
+    player: int
+    fled: bool
+    combat: bool

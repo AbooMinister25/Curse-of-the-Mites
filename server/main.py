@@ -5,6 +5,7 @@ import websockets
 from game_components.game import Game, Mob
 from game_components.game_objects import (
     ActionDict,
+    FleeDict,
     MovementDict,
     Player,
     RoomActionDict,
@@ -204,6 +205,13 @@ async def send_updates(out_queue: asyncio.Queue):
                     type="update",
                     message=get_movement_message(action),
                 )
+            case {"player": uid, "fled": _}:
+                player_uids = uid
+                update = ActionUpdateMessage(
+                    type="update",
+                    message=get_fleeing_message(action),
+                )
+                pass
             case {"type": "room_action"}:
                 player_uids = get_room_update_uids(action)
                 update = ActionUpdateMessage(
@@ -224,7 +232,6 @@ async def send_updates(out_queue: asyncio.Queue):
                     message="Time passes by, but you didn't do anything this round!",
                 )
             case _:
-                print(action)
                 # We should probably raise an error here... but it's gonna be fine.
                 # Ignoring errors lead to more features ;)
                 continue
@@ -254,6 +261,16 @@ def get_movement_message(move: MovementDict) -> str:
         result = "but you can't move while fighting!"
 
     return f"You try moving {move['direction']}... {result}"
+
+
+def get_fleeing_message(fleeing: FleeDict) -> str:
+    message = "You tried fleeing but you aren't in combat!"
+    if fleeing["fled"]:
+        message = "You fled combat!"
+    elif fleeing["combat"]:
+        message = "You tried fleeing but failed!"
+
+    return message
 
 
 def get_action_update_message(action: ActionDict) -> str:

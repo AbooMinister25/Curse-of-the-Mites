@@ -6,6 +6,7 @@ if __name__ == "__main__":
         ActionDict,
         BaseRoom,
         Combat,
+        FleeDict,
         LeftLower,
         LeftTop,
         Mob,
@@ -25,6 +26,7 @@ else:
         ActionDict,
         BaseRoom,
         Combat,
+        FleeDict,
         LeftLower,
         LeftTop,
         Mob,
@@ -50,7 +52,7 @@ class Game:
 
     def __init__(self):
         self.out_queue: Queue[
-            ActionDict | MovementDict | RoomActionDict | int
+            ActionDict | MovementDict | RoomActionDict | FleeDict | int
         ] = Queue()
         self.players = {}
         self.mobs = {}
@@ -204,7 +206,6 @@ class Game:
             action_performed = self.players[player_uid].update()
             if isinstance(action_performed, list):
                 if len(action_performed) == 0:
-                    print(action_performed)
                     await self.out_queue.put({"no_target": player_uid})
                 for action in action_performed:
                     await self.out_queue.put(action)
