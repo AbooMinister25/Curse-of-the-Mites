@@ -8,6 +8,8 @@ from .schemas import (
     ActionWithTargetRequest,
     ChatMessage,
     InitializePlayer,
+    MapRequest,
+    MapResponse,
     PlayerSchema,
     RegistrationSuccessful,
 )
@@ -25,6 +27,8 @@ __all__ = (
     "InitializePlayer",
     "PlayerSchema",
     "RegistrationSuccessful",
+    "MapRequest",
+    "MapResponse",
     # serialization.py
     "deserialize_client_request",
     "deserialize_server_response",

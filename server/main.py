@@ -15,6 +15,8 @@ from common.schemas import (
     ActionWithTargetRequest,
     ChatMessage,
     InitializePlayer,
+    MapRequest,
+    MapResponse,
     MovementRequest,
     PlayerSchema,
     RegistrationSuccessful,
@@ -71,6 +73,22 @@ async def register(websocket: WebSocketServerProtocol) -> None:
         await handler(websocket)
     finally:
         del connections[registered_player.uid]
+
+
+async def initialize_map(websocket: WebSocketServerProtocol) -> None:
+    """Fetches and sends the game map data to the client"""
+    event = deserialize(await websocket.recv())
+
+    if not isinstance(event, MapRequest):
+        raise InvalidMessage("Expected an `init_map` message.")
+
+    rooms = [room.export() for room in game.rooms.values()]
+
+    response = MapResponse(
+        type="map_response",
+        rooms=rooms,
+    )
+    await websocket.send(response.json)
 
 
 async def handler(websocket: WebSocketServerProtocol) -> None:

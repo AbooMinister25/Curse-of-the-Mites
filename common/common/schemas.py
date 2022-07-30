@@ -1,4 +1,4 @@
-from typing import Generic, Literal, TypeVar
+from typing import Generic, Literal, TypedDict, TypeVar
 
 from pydantic import BaseModel
 
@@ -64,6 +64,29 @@ class ActionResponse(MessageBase[Literal["action_response"]]):
     """Response to an action which the client sent."""
 
     response: str
+
+
+class MapRequest(MessageBase[Literal["init_map"]]):
+    """Request sent by the client when they want the data for the game map"""
+
+
+class ExportedData(TypedDict):
+    uid: int
+    color: tuple[int, int, int]
+    display_char: str
+    x: int
+    y: int
+    title: str
+    description: str
+    mobs: list
+    players: list
+    exits: list
+
+
+class MapResponse(MessageBase[Literal["map_response"]]):
+    """Response to a map request sent by the client"""
+
+    rooms: list[ExportedData]
 
 
 CLIENT_REQUEST = (
