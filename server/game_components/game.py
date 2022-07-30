@@ -7,7 +7,6 @@ if __name__ == "__main__":
     from game_objects import (
         ActionDict,
         BaseRoom,
-        Combat,
         FleeDict,
         LeftLower,
         LeftTop,
@@ -27,7 +26,6 @@ else:
     from game_components.game_objects import (
         ActionDict,
         BaseRoom,
-        Combat,
         FleeDict,
         LeftLower,
         LeftTop,
@@ -49,7 +47,6 @@ class Game:
     players: dict[int, Player]
     mobs: dict[int, Mob]
     rooms: dict[int, BaseRoom]
-    combats: list[Combat]
     start_time: int
 
     def __init__(self):
@@ -64,7 +61,6 @@ class Game:
         self.players = {}
         self.mobs = {}
         self.rooms = {}
-        self.combats = []
         self.build_map()
         self.start_time = round(time.time() * 1000)
 
@@ -194,15 +190,6 @@ class Game:
         return True
 
     async def update(self):
-        # REDUCE COMBATS
-        for i, _e in enumerate(self.combats):
-            for j, _f in enumerate(self.combats):
-                if i != j:
-                    result = _e.combine(_f)
-                    if result is not None:
-                        self.combats.remove(result)
-                        break
-
         for mob_uid in self.mobs:
             self.mobs[mob_uid].update()
 
@@ -284,30 +271,6 @@ if __name__ == "__main__":
             print(f"\t{k}: {v}")
     print(temp)
     """
-    # Test Combats
-    #
-    c = Mob("antc", ["bite"])
-    g.add_mob(c, 1, 1)
-    # adding a player to a map location
-    B = Player("aboo", ["stomp", "spit"], g)
-    g.add_player(B, 1, 1)
-    d = Mob("antd", ["eat_berry", "bite", "stomp"])
-    g.add_mob(d, 1, 1)
-    C = Player("baut", ["eat_berry", "bite", "spit"], g)
-    combata = Combat([A, a], temp)
-    combatb = Combat([B, b, c], temp)
-    combatc = Combat([d, C], g.get_room_at(2, 2))
-    g.combats.append(combata)
-    g.combats.append(combatb)
-    g.combats.append(combatc)
-    for i, combat in enumerate(g.combats):
-        print(i, combat)
-    combatb.add_to_combat(A)
-    combata.add_to_combat(d)
-    g.update()
-    print("~Reduced~")  # Combats in the same room get reduced.
-    for i, combat in enumerate(g.combats):
-        print(i, combat)
 
     # Test movements.
     print("~~~~~~~~~~~")
