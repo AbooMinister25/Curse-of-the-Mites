@@ -203,10 +203,15 @@ class Game:
         for player_uid in self.players:
             action_performed = self.players[player_uid].update()
             if isinstance(action_performed, list):
+                if len(action_performed) == 0:
+                    print(action_performed)
+                    await self.out_queue.put({"no_target": player_uid})
                 for action in action_performed:
                     await self.out_queue.put(action)
-            else:
+            elif isinstance(action_performed, dict):
                 await self.out_queue.put(action_performed)
+            else:
+                await self.out_queue.put({"no_action": action_performed})
 
         for room_uid in self.rooms:
             for event in self.rooms[room_uid].events:

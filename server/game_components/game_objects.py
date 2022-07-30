@@ -403,11 +403,6 @@ class Mob(Entity):
         super().__init__(_name, _allowed_actions)
 
 
-class AddCommandResult(typing.NamedTuple):
-    success: bool
-    message: str
-
-
 class Player(Entity):
     level: int
     command_queue: list[dict[str, Entity | None]]
@@ -447,11 +442,17 @@ class Player(Entity):
 
         result = None
         if command["command"] in movement_commands:
-            valid_move = self.game.move_player(self, command["command"])
+            reason = None
+            valid_move = False
+            if self.in_combat:
+                reason = "combat"
+            else:
+                valid_move = self.game.move_player(self, command["command"])
             result = {
                 "player": self.uid,
                 "direction": command["command"],
                 "success": valid_move,
+                "reason": reason,
             }
         elif command["command"] == "flee":
             pass  # TODO: IMPLEMENT FLEEING.
@@ -483,7 +484,7 @@ class Player(Entity):
 
     def add_command_to_queue(
         self, _command: str, _target: Entity | None = None
-    ) -> AddCommandResult:
+    ) -> bool:
         """
         Adds a command to the player queue if it's valid.
 
@@ -493,7 +494,7 @@ class Player(Entity):
         """
         validity = self._check_command_validity(_command, _target)
 
-        if validity.success:
+        if validity:
             event = {"command": _command, "target": _target}
             self.command_queue.insert(0, event)
 
@@ -501,7 +502,7 @@ class Player(Entity):
 
     def _check_command_validity(
         self, _command: str, _target: Entity | None = None
-    ) -> AddCommandResult:
+    ) -> bool:
         """
         Checks that a command is valid.
 
@@ -514,40 +515,36 @@ class Player(Entity):
         if _command == "flee":
             # you tried to flee but you aren't in combat. idiot.
             if not self.in_combat:
-                return AddCommandResult(
-                    False, "Silly, don't try to flee if you aren't in combat!"
-                )
+                return False
             else:
-                return AddCommandResult(True, "Added fleeing to your queue!")
+                return True
         if _command in directions:
             # you tried to move but you are in combat. STOP.
             if self.in_combat:
-                return AddCommandResult(
-                    False, "Don't just move like that when you're fighting!"
-                )
+                return True
             else:
-                return AddCommandResult(True, f"Moving {_command} added to your queue.")
+                return True
         if _command in self.allowed_actions:
             # make sure actions that need a target get a target
             if self.allowed_actions[_command].requires_target and _target is None:
-                return AddCommandResult(False, f"{_command} requires a target!")
+                return False
             elif (
                 not self.allowed_actions[_command].requires_target
             ) and _target is not None:
-                return AddCommandResult(False, f"{_command} doesn't require a target!")
+                return False
         match _command:
             case "clear":
                 self.command_queue = []
                 # We did something but there's nothing to queue, so we return false.
-                return AddCommandResult(False, "Your queue was erased!")
+                return False
             case "nvm":
                 self.command_queue = self.command_queue[:-1]
                 # We did something but there's nothing to queue, so we return false.
-                return AddCommandResult(False, "Last command of the queue erased!")
+                return False
             case _ if _command in self.allowed_actions:
-                return AddCommandResult(True, f"{_command} added to your queue.")
+                return True
             case _:
-                return AddCommandResult(False, f"You can't do {_command}!")
+                return False
 
 
 class TargetsError(Exception):
@@ -1227,6 +1224,7 @@ class MovementDict(typing.TypedDict):
     player: int
     direction: str
     success: bool
+    reason: str | None
 
 
 class CommandDict(typing.TypedDict):

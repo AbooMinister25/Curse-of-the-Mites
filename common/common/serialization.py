@@ -28,7 +28,6 @@ def deserialize_client_request(event: dict[str, typing.Any]) -> CLIENT_REQUEST:
         case {"type": "init"}:
             return InitializePlayer(**event)
         case {"type": "move"}:
-            print(event)
             return MovementRequest(**event)
         case _:
             raise NotImplementedError(f"unknown event type `{event['type']}`")

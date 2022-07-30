@@ -3,7 +3,12 @@ import json
 
 import websockets
 from game_components.game import Game, Mob
-from game_components.game_objects import ActionDict, Player, RoomActionDict
+from game_components.game_objects import (
+    ActionDict,
+    MovementDict,
+    Player,
+    RoomActionDict,
+)
 from mess_up_actions import NO_SHUFFLE, MessedPlayer
 from websockets.exceptions import InvalidMessage
 from websockets.legacy.server import WebSocketServerProtocol
@@ -125,8 +130,10 @@ async def handle_action_without_target(
 
     response = None
     if req.action in NO_SHUFFLE:
-        result = game.get_player(req.player).add_command_to_queue(req.action)
-        response = ActionResponse(type="action_response", response=result.message)
+        game.get_player(req.player).add_command_to_queue(req.action)
+        response = ActionResponse(
+            type="action_response", response=get_no_shuffle_response(req.action)
+        )
     elif action is None:
         response = ActionResponse(
             type="action_response", response=f"You can't {req.action}!"
@@ -143,6 +150,16 @@ async def handle_action_without_target(
         )
 
     await ws.send(response.json())
+
+
+def get_no_shuffle_response(action: str) -> str:
+    message = "Added action to queue."
+    if action == "nvm":
+        message = "Cleared last action from your queue."
+    elif action == "clear":
+        message = "Cleared your entire movement queue."
+
+    return message
 
 
 async def handle_movement(req: MovementRequest, ws: WebSocketServerProtocol):
@@ -181,24 +198,36 @@ async def send_updates(out_queue: asyncio.Queue):
                 update = ActionUpdateMessage(
                     type="update", message=get_action_update_message(action)
                 )
-            case {"player": uid, "direction": direction, "success": success}:
+            case {"player": uid, "direction": _}:
                 player_uids = uid
-                succeed = "succeed!" if success else "fail!"
                 update = ActionUpdateMessage(
                     type="update",
-                    message=f"You try moving {direction}... and {succeed}",
+                    message=get_movement_message(action),
                 )
             case {"type": "room_action"}:
                 player_uids = get_room_update_uids(action)
                 update = ActionUpdateMessage(
                     type="update", message=get_room_update_message(action)
                 )
-            case int():
-                player_uids = action
+            case {"no_target": uid}:
+                player_uids = uid
+                # We don't tell the player what they tried to do.
+                # That way they can't go to an empty room to test no-target skills... Totally a feature.
+                update = ActionUpdateMessage(
+                    type="update",
+                    message="You tried doing something in this room... but there's nothing to hit!",
+                )
+            case {"no_action": uid}:
+                player_uids = uid
                 update = ActionUpdateMessage(
                     type="update",
                     message="Time passes by, but you didn't do anything this round!",
                 )
+            case _:
+                print(action)
+                # We should probably raise an error here... but it's gonna be fine.
+                # Ignoring errors lead to more features ;)
+                continue
 
         match player_uids:
             case int():
@@ -215,6 +244,16 @@ async def send_updates(out_queue: asyncio.Queue):
                     if connections.get(player_uid) is not None
                 }
                 websockets.broadcast(player_connections, update.json())
+
+
+def get_movement_message(move: MovementDict) -> str:
+    result = "but there's a wall there!"
+    if move["success"]:
+        result = "and succeed!"
+    elif move["reason"] is not None:
+        result = "but you can't move while fighting!"
+
+    return f"You try moving {move['direction']}... {result}"
 
 
 def get_action_update_message(action: ActionDict) -> str:
