@@ -47,7 +47,7 @@ ROOMS_MAP = {
 
 
 class InvalidRoomError(Exception):
-    ...
+    pass
 
 
 class Game:

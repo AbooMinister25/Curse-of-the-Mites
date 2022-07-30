@@ -721,6 +721,7 @@ class BaseRoom(ABC):
         m.update(data.encode())
         self.uid = int(m.hexdigest(), 16)
         self.__title = _title
+        self.__description = _description
         self.__color = _color
         self.events = []
         self.__linked_rooms = _linked_rooms
@@ -735,6 +736,19 @@ class BaseRoom(ABC):
     def get_display(self) -> DisplayDict:
         """:return: dictionary of `color` and `display_char` for building map"""
         return {"color": self.__color, "display_char": self.__display_char}
+
+    def export_display(self) -> DisplayExport:
+        return {
+            "color": self.__color,
+            "display_x": self.display_x,
+            "display_y": self.display_y,
+            "title": self.__title,
+            "description": self.__description,
+            "north": self.__linked_rooms["north"],
+            "east": self.__linked_rooms["east"],
+            "south": self.__linked_rooms["south"],
+            "west": self.__linked_rooms["west"],
+        }
 
     def export(self) -> ExportedData:
         _mobs: list[MobData] = []
@@ -1186,6 +1200,18 @@ class CommandDict(typing.TypedDict):
 class DisplayDict(typing.TypedDict):
     color: tuple[int, int, int]
     display_char: str
+
+
+class DisplayExport(typing.TypedDict):
+    color: tuple[int, int, int]
+    display_x: int
+    display_y: int
+    title: str
+    description: str
+    north: BaseRoom | None
+    east: BaseRoom | None
+    south: BaseRoom | None
+    west: BaseRoom | None
 
 
 class ExportedData(typing.TypedDict):
