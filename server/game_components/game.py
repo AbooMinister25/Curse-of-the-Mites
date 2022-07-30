@@ -200,6 +200,14 @@ class Game:
                         self.combats.remove(result)
                         break
 
+        for player_uid in self.players:
+            action_performed = self.players[player_uid].update()
+            if isinstance(action_performed, list):
+                for action in action_performed:
+                    await self.out_queue.put(action)
+            else:
+                await self.out_queue.put(action_performed)
+
         for room_uid in self.rooms:
             for event in self.rooms[room_uid].events:
                 await self.out_queue.put(event)
@@ -208,14 +216,6 @@ class Game:
             ].events = (
                 []
             )  # If an event was missed for whatever reason... to bad... it's a feature!
-
-        for player_uid in self.players:
-            action_performed = self.players[player_uid].update()
-            if isinstance(action_performed, list):
-                for action in action_performed:
-                    await self.out_queue.put(action)
-            else:
-                await self.out_queue.put(action_performed)
 
 
 if __name__ == "__main__":
