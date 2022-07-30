@@ -12,6 +12,7 @@ from .schemas import (
     InitializePlayer,
     MovementRequest,
     RegistrationSuccessful,
+    RoomChangeUpdate,
 )
 
 SERVER_RESPONSE_TYPES: dict[str, type[SERVER_RESPONSE]] = {}
@@ -43,6 +44,8 @@ def deserialize_server_response(event: dict[str, typing.Any]) -> SERVER_RESPONSE
             return ActionResponse(**event)
         case {"type": "update"}:
             return ActionUpdateMessage(**event)
+        case {"type": "room_change"}:
+            return RoomChangeUpdate(**event)
         case _:
             raise NotImplementedError(f"unknown event type `{event['type']}`")
 

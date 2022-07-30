@@ -5,6 +5,7 @@ import websockets
 from game_components.game import Game, Mob
 from game_components.game_objects import (
     ActionDict,
+    BaseRoom,
     FleeDict,
     MovementDict,
     Player,
@@ -25,6 +26,7 @@ from common.schemas import (
     MovementRequest,
     PlayerSchema,
     RegistrationSuccessful,
+    RoomChangeUpdate,
 )
 from common.serialization import deserialize_client_request
 
@@ -194,6 +196,10 @@ async def send_updates(out_queue: asyncio.Queue):
         update: ActionUpdateMessage()
         player_uids: int | set
         match action:
+            case RoomChangeUpdate():
+                room = game.get_room(action.room_uid)
+                player_uids = get_room_update_uids(room, action.entity_uid)
+                update = action
             case {"caster": uid}:
                 player_uids = uid
                 update = ActionUpdateMessage(
@@ -212,8 +218,8 @@ async def send_updates(out_queue: asyncio.Queue):
                     message=get_fleeing_message(action),
                 )
                 pass
-            case {"type": "room_action"}:
-                player_uids = get_room_update_uids(action)
+            case {"type": "room_action", "room": room}:
+                player_uids = get_room_update_uids(room, action["action"]["caster"])
                 update = ActionUpdateMessage(
                     type="update", message=get_room_update_message(action)
                 )
@@ -301,21 +307,16 @@ def get_action_update_message(action: ActionDict) -> str:
     return message
 
 
-def get_room_update_uids(room_action: RoomActionDict) -> set:
+def get_room_update_uids(room: BaseRoom, caster_uid: int) -> set:
     """Returns the uids of every player in the room except the caster."""
-    players = room_action["room"].get_players()
-    uids = {
-        player.uid
-        for player in players
-        if player.uid != room_action["action"]["caster"]
-    }
+    players = room.get_players()
+    uids = {player.uid for player in players if player.uid != caster_uid}
 
     return uids
 
 
 def get_room_update_message(room_action: RoomActionDict) -> str:
     """This is the message to be displayed to the players in the action that this room happened."""
-    RoomActionDict()
     action: ActionDict = room_action["action"]
 
     caster = game.get_player(action["caster"]) or game.get_mob(action["caster"])

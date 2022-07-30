@@ -6,6 +6,8 @@ import time
 import typing
 from abc import ABC, abstractmethod  # abstract classes
 
+from common.schemas import RoomChangeUpdate
+
 if typing.TYPE_CHECKING:
     from game import Game
 
@@ -747,7 +749,6 @@ all_actions = {
 
 
 class BaseRoom(ABC):
-    events: list[object]
     __title: str
     __description: str
     __linked_rooms: dict[str, None | BaseRoom]
@@ -765,7 +766,7 @@ class BaseRoom(ABC):
     mob_combatants: set[int]
     player_combatants: set[int]
 
-    events: list[RoomActionDict]
+    events: list[RoomActionDict | RoomChangeUpdate]
 
     def __init__(
         self,
@@ -888,19 +889,39 @@ class BaseRoom(ABC):
     def get_mobs(self) -> list[Mob]:
         return self.__mobs
 
-    def add_player(self, _player: Player):
+    def add_player(self, player: Player):
         """
         Add player to room
 
         :param _player: player object to add
         :return:
         """
-        _player.in_room = self
-        self.__players.append(_player)
+        player.in_room = self
+        self.__players.append(player)
 
-    def remove_player(self, _player: Player):
-        _player.in_room = None
-        self.__players.remove(_player)
+        self.events.append(  # TODO
+            RoomChangeUpdate(
+                type="room_change",
+                room_uid=self.uid,
+                entity_uid=player.uid,
+                entity_name=player.name,
+                enters=True,
+            )
+        )
+
+    def remove_player(self, player: Player):
+        player.in_room = None
+        self.__players.remove(player)
+
+        self.events.append(  # TODO
+            RoomChangeUpdate(
+                type="room_change",
+                room_uid=self.uid,
+                entity_uid=player.uid,
+                entity_name=player.name,
+                enters=False,
+            )
+        )
 
     def add_mob(self, _mob: Mob):
         """

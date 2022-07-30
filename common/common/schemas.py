@@ -75,6 +75,21 @@ class ActionUpdateMessage(MessageBase[Literal["update"]]):
     message: str
 
 
+class RoomChangeUpdate(MessageBase[Literal["room_change"]]):
+    """Message sent by the server after an entity enters or leaves a room."""
+
+    room_uid: int
+    entity_uid: int
+    entity_name: str
+    enters: bool  # If False then it's leaving.
+
+
+class RoomInformationMessage(MessageBase[Literal["room_info"]]):
+    """Message sent to a player that's entering a new room."""
+
+    entities: list[RoomChangeUpdate]
+
+
 CLIENT_REQUEST = (
     ChatMessage
     | InitializePlayer
@@ -83,6 +98,10 @@ CLIENT_REQUEST = (
     | MovementRequest
 )
 SERVER_RESPONSE = (
-    RegistrationSuccessful | ActionResponse | ChatMessage | ActionUpdateMessage
+    RegistrationSuccessful
+    | ActionResponse
+    | ChatMessage
+    | ActionUpdateMessage
+    | RoomChangeUpdate
 )
 MESSAGE = CLIENT_REQUEST | SERVER_RESPONSE

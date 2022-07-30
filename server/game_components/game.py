@@ -1,6 +1,8 @@
 import time
 from asyncio import Queue
 
+from common.schemas import RoomChangeUpdate
+
 if __name__ == "__main__":
     from game_objects import (
         ActionDict,
@@ -52,7 +54,12 @@ class Game:
 
     def __init__(self):
         self.out_queue: Queue[
-            ActionDict | MovementDict | RoomActionDict | FleeDict | int
+            ActionDict
+            | MovementDict
+            | RoomActionDict
+            | FleeDict
+            | RoomChangeUpdate
+            | int
         ] = Queue()
         self.players = {}
         self.mobs = {}
@@ -149,48 +156,42 @@ class Game:
                     current_room.set_links(directions)
 
     def add_player(self, player: Player, target_x: int, target_y: int) -> bool:
-        for room in self.rooms.values():
-            if room.can_entity_step:
-                if room.get_map_location() == (target_x, target_y):
-                    if player.uid not in self.players:
-                        self.players[player.uid] = player
-                    room.add_player(player)
-                    return True
-        else:
+        room = self.get_room_at(target_x, target_y)
+        assert room
+
+        if not room.can_entity_step:
             return False
 
-    def move_player(self, _player: Player, direction: str) -> bool:
+        if player.uid not in self.players:
+            self.players[player.uid] = player
+
+        room.add_player(player)
+        return True
+
+    def move_player(self, player: Player, direction: str) -> bool:
         if direction not in ("north", "east", "west", "south"):
             return False
 
         player_moved = False
 
-        # print("HERE")
-        for room in self.rooms.values():
-            if _player in room.get_players():
-                # print(_player)
-                # print(room.get_players())
-                to_go = room.get_links()[direction]
-                # print("ROOM TO GO TO")
-                # print(to_go)
-                # print("=======")
-                if to_go is not None and to_go.can_entity_step:
-                    room.remove_player(_player)
-                    to_go.add_player(_player)
-                    player_moved = True
-                break
+        from_room = player.in_room
+        to_go = from_room.get_links()[direction]
+
+        if to_go is not None and to_go.can_entity_step:
+            from_room.remove_player(player)
+            to_go.add_player(player)
+            player_moved = True
 
         return player_moved
 
     def add_mob(self, mob: Mob, target_x: int, target_y: int) -> bool:
-        for room in self.rooms.values():
-            if room.can_entity_step:
-                if room.get_map_location() == (target_x, target_y):
-                    self.mobs[mob.uid] = mob
-                    room.add_mob(mob)
-                    return True
-        else:
-            return False
+        room = self.get_room_at(target_x, target_y)
+        assert room
+        assert room.can_entity_step
+
+        self.mobs[mob.uid] = mob
+        room.add_mob(mob)
+        return True
 
     async def update(self):
         # REDUCE COMBATS
@@ -207,15 +208,17 @@ class Game:
 
         for player_uid in self.players:
             action_performed = self.players[player_uid].update()
-            if isinstance(action_performed, list):
-                if len(action_performed) == 0:
-                    await self.out_queue.put({"no_target": player_uid})
-                for action in action_performed:
-                    await self.out_queue.put(action)
-            elif isinstance(action_performed, dict):
-                await self.out_queue.put(action_performed)
-            else:
-                await self.out_queue.put({"no_action": action_performed})
+
+            match action_performed:
+                case list():
+                    if len(action_performed) == 0:
+                        await self.out_queue.put({"no_target": player_uid})
+                    for action in action_performed:
+                        await self.out_queue.put(action)
+                case dict():
+                    await self.out_queue.put(action_performed)
+                case _:
+                    await self.out_queue.put({"no_action": action_performed})
 
         for room_uid in self.rooms:
             for event in self.rooms[room_uid].events:
