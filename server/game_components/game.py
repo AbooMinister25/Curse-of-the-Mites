@@ -184,6 +184,7 @@ class Game:
         for room in self.rooms.values():
             if room.can_entity_step:
                 if room.get_map_location() == (target_x, target_y):
+                    self.mobs[mob.uid] = mob
                     room.add_mob(mob)
                     return True
         else:

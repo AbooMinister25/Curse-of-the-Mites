@@ -2,7 +2,7 @@ import asyncio
 import json
 
 import websockets
-from game_components.game import Game
+from game_components.game import Game, Mob
 from game_components.game_objects import ActionDict, Player, RoomActionDict
 from mess_up_actions import NO_SHUFFLE, MessedPlayer
 from websockets.exceptions import InvalidMessage
@@ -30,6 +30,10 @@ connections: dict[
 messed_players: dict[int, MessedPlayer] = {}
 
 game = Game()
+test_ant = Mob(
+    "Test Ant", ["bite"]
+)  # TODO: find a better place for our trusty test ant.
+game.add_mob(test_ant, 24, 16)
 
 
 def deserialize(message: str | bytes) -> CLIENT_REQUEST:

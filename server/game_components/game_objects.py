@@ -434,17 +434,18 @@ class Player(Entity):
             result = self._do(next_command)
 
         if isinstance(result, list):
+            self._start_combats_in_room(result)
             super().update(actions=result)
         else:
             super().update()
 
+        self._check_combat_end()
         return result
 
     def _do(self, command: CommandDict) -> list[ActionDict] | MovementDict | None:
         movement_commands = ["north", "east", "south", "west"]
 
         result = None
-        # TODO: Tell the player "HEY, YOU DID THIS THING"
         if command["command"] in movement_commands:
             valid_move = self.game.move_player(self, command["command"])
             result = {
@@ -459,10 +460,26 @@ class Player(Entity):
 
         return result
 
-    def send_events_to_player(self):
-        for event in self.events:
-            # TODO: SEND EVENTS TO THE PLAYER
-            pass
+    def _start_combats_in_room(self, actions: list[ActionDict]) -> None:
+        """Makes sure combats start in the current room if needed."""
+        for action in actions:
+            # Only start combat with mobs.
+            target = self.game.get_mob(action["target"])
+            if (
+                (target is not None)
+                and (action["cast"])
+                and (all_actions[action["name"]])
+            ):
+                self.in_room.player_combatants.add(self.uid)
+                self.in_room.mob_combatants.add(target.uid)
+                self.in_combat = True
+
+    def _check_combat_end(self) -> None:
+        """Ends combat automatically if there's no mobs left that want to fight."""
+        if self.in_combat:
+            # If you're engaged in combat and there's still mob combatants in the room,
+            # then you don't exit combat automatically.
+            self.in_combat = len(self.in_room.mob_combatants) > 0
 
     def add_command_to_queue(
         self, _command: str, _target: Entity | None = None
@@ -589,6 +606,7 @@ class Action:
         self.__cost = _cost
         self.__hit_percentage = _hit_percentage
         self.name = _name
+        self.causes_combat = _causes_combat
 
     def action(self, _caster: Entity, _target: Entity | None) -> list[ActionDict]:
         """
@@ -664,6 +682,7 @@ class Action:
         hit = hit_check <= self.__hit_percentage
 
         result = {
+            "name": self.name,
             "caster": caster.uid,
             "target": target.uid,
             "hit": hit,
@@ -715,6 +734,9 @@ class BaseRoom(ABC):
     display_y: int
     can_entity_step: bool
 
+    mob_combatants: set[int]
+    player_combatants: set[int]
+
     events: list[RoomActionDict]
 
     def __init__(
@@ -755,6 +777,8 @@ class BaseRoom(ABC):
         self.display_y = _display_y
 
         self.events = []
+        self.mob_combatants = set()
+        self.player_combatants = set()
 
         BaseRoom.number += 1
 
@@ -1191,6 +1215,7 @@ class Tile(typing.TypedDict):
 
 
 class ActionDict(typing.TypedDict):
+    name: str
     caster: int
     target: int
     hit: bool
