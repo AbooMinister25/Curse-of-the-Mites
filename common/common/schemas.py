@@ -32,10 +32,24 @@ class PlayerSchema(BaseModel):
     allowed_actions: set[str]
 
 
+class ExportedData(TypedDict):
+    uid: int
+    color: tuple[int, int, int]
+    display_char: str
+    x: int
+    y: int
+    title: str
+    description: str
+    mobs: list
+    players: list
+    exits: list
+
+
 class RegistrationSuccessful(MessageBase[Literal["registration_successful"]]):
     """Sent by the server when the player successfully registers."""
 
     player: PlayerSchema
+    map: list[ExportedData]
 
 
 class ActionNoTargetRequest(MessageBase[Literal["action"]]):
@@ -66,36 +80,12 @@ class ActionResponse(MessageBase[Literal["action_response"]]):
     response: str
 
 
-class MapRequest(MessageBase[Literal["init_map"]]):
-    """Request sent by the client when they want the data for the game map"""
-
-
-class ExportedData(TypedDict):
-    uid: int
-    color: tuple[int, int, int]
-    display_char: str
-    x: int
-    y: int
-    title: str
-    description: str
-    mobs: list
-    players: list
-    exits: list
-
-
-class MapResponse(MessageBase[Literal["map_response"]]):
-    """Response to a map request sent by the client"""
-
-    rooms: list[ExportedData]
-
-
 CLIENT_REQUEST = (
     ChatMessage
     | InitializePlayer
     | ActionNoTargetRequest
     | ActionWithTargetRequest
     | MovementRequest
-    | MapRequest
 )
-SERVER_RESPONSE = RegistrationSuccessful | ActionResponse | ChatMessage | MapResponse
+SERVER_RESPONSE = RegistrationSuccessful | ActionResponse | ChatMessage
 MESSAGE = CLIENT_REQUEST | SERVER_RESPONSE
