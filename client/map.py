@@ -57,8 +57,8 @@ class Map(Widget):
                         if tile.players:
                             display.append(
                                 Text(
-                                    "▆ ",
-                                    "blue",
+                                    "@ ",
+                                    "yellow",
                                 )
                             )
                         else:
