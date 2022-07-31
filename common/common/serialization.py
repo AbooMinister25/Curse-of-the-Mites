@@ -15,6 +15,7 @@ from .schemas import (
     LevelUpNotification,
     MapUpdate,
     MovementRequest,
+    MovementUpdateMessage,
     RegistrationSuccessful,
     RoomChangeUpdate,
 )
@@ -58,6 +59,8 @@ def deserialize_server_response(event: dict[str, typing.Any]) -> SERVER_RESPONSE
             return WIN(**event)
         case {"type": "level_up"}:
             return LevelUpNotification(**event)
+        case {"type": "movement_update"}:
+            return MovementUpdateMessage(**event)
         case _:
             raise NotImplementedError(f"unknown event type `{event['type']}`")
 

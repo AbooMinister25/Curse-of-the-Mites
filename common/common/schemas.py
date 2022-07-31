@@ -104,6 +104,13 @@ class RoomChangeUpdate(MessageBase[Literal["room_change"]]):
     enters: bool  # If False then it's leaving.
 
 
+class MovementUpdateMessage(MessageBase[Literal["movement_update"]]):
+    """Message sent to the player after they try to move."""
+
+    message: str
+    map_update: MapUpdate | None
+
+
 class RoomInformationMessage(MessageBase[Literal["room_info"]]):
     """Message sent to a player that's entering a new room."""
 
@@ -146,5 +153,6 @@ SERVER_RESPONSE = (
     | DEATH
     | WIN
     | MapUpdate
+    | MovementUpdateMessage
 )
 MESSAGE = CLIENT_REQUEST | SERVER_RESPONSE
