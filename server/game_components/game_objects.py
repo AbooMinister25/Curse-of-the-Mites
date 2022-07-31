@@ -215,6 +215,7 @@ raw_map: list[Tile] = [
     {"y": 17, "x": 4, "type": "tol"},
     {"y": 17, "x": 5, "type": "tol"},
     {"y": 17, "x": 6, "type": "tol"},
+    {"y": 17, "x": 7, "type": "tol"},
     {"y": 17, "x": 8, "type": "tol"},
     {"y": 17, "x": 9, "type": "tol"},
     {"y": 17, "x": 9, "type": "tol"},
