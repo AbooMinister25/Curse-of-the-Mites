@@ -149,10 +149,18 @@ async def handle_action_with_target(
             type="action_response", response=f"You can't {req.action}!"
         )
     elif action.requires_target:
-        game.get_player(req.player).add_command_to_queue(req.action, req.target)
-        response = ActionResponse(
-            type="action_response", response="Added action to queue."
-        )
+        target = game.get_mob(req.target)
+
+        if target is not None:
+            game.get_player(req.player).add_command_to_queue(req.action, target)
+            response = ActionResponse(
+                type="action_response", response="Added action to queue."
+            )
+        else:
+            response = ActionResponse(
+                type="action_response",
+                response="Whatever you were trying to hit is no longer there! (feature)",
+            )
     else:
         response = ActionResponse(
             type="action_response",

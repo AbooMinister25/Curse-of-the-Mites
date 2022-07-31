@@ -206,10 +206,13 @@ class Console(Widget):
                     log_display = f"{direction} isn't a direction!"
             case [("!flee" | "!nvm" | "!clear") as action]:
                 log_display = await self.handle_action_without_target(action)
-            case [action, target] if self.message.startswith("!"):
-                log_display = await self.handle_action_with_target(action, target)
             case [action] if self.message.startswith("!"):
                 log_display = await self.handle_action_without_target(action)
+            case [action, *target] if self.message.startswith("!"):
+                full_target_name = " ".join(target)
+                log_display = await self.handle_action_with_target(
+                    action, full_target_name
+                )
             case _:
                 # Treat commands without a leading slash as "chat" commands.
                 log_display = await self.send_chat_message()
@@ -238,7 +241,7 @@ class Console(Widget):
     async def handle_action_with_target(self, action: str, target: str) -> str:
         target_uid = self.get_target(target)
 
-        if target:
+        if target_uid:
             message = ActionWithTargetRequest(
                 type="action",
                 action=action[1:],
@@ -248,7 +251,7 @@ class Console(Widget):
             await self.main_app.websocket.send(message.json())
             return ""
         else:
-            return "That target doesn't exist!"
+            return f"`{target}` doesn't exist!"
 
     @enforce_initialization
     async def handle_action_without_target(self, action: str) -> str:
@@ -275,9 +278,14 @@ class Console(Widget):
 
         Returns None if the target name doesn't exist.
         """
-        return (
-            1  # TODO: this doesn't feel like an UID. TODO: Check if the target exists.
-        )
+        target_uid = None
+        # Sorry for this ugliness :'(
+        for uid, name in self.main_app.entities.entities.items():
+            if name == target_name:
+                target_uid = uid
+                break
+
+        return target_uid
 
 
 def display_help(all_commands: dict[str, str]) -> str:
