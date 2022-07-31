@@ -184,16 +184,21 @@ def get_no_shuffle_response(action: str) -> str:
 
 async def handle_movement(req: MovementRequest, ws: WebSocketServerProtocol):
     direction = messed_players[req.player].directions[req.direction]
-    game.get_player(req.player).add_command_to_queue(direction)
+    # game.get_player(req.player).add_command_to_queue(direction)
 
-    response = ActionResponse(type="action_response", response="Added move to queue.")
+    # response = ActionResponse(type="action_response", response="Added move to queue.")
 
-    await ws.send(response.json())
-    """    map_rooms = [room.export() for room in game.rooms.values()]
-    map_rs = MapUpdate(type="map_update", map=map_rooms)
+    # await ws.send(response.json())
+    result = game.get_player(req.player).move(direction)
 
-    await ws.send(map_rs.json())
-    """
+    map_rs = result["map_update"]
+    update = MovementUpdateMessage(
+        type="movement_update",
+        message=get_movement_message(result),
+        map_update=map_rs,
+    )
+
+    await ws.send(update.json())
 
 
 async def websocket_handling() -> None:
@@ -213,7 +218,8 @@ async def game_loop():
         players_to_clean = game.clean_the_dead()
 
         for player_uid in players_to_clean:
-            connections.pop(player_uid)
+            if player_uid in connections:
+                connections.pop(player_uid)
 
 
 async def send_updates(out_queue: asyncio.Queue):
@@ -241,15 +247,6 @@ async def send_updates(out_queue: asyncio.Queue):
                 player_uids = uid
                 update = ActionUpdateMessage(
                     type="update", message=get_action_update_message(action)
-                )
-            case {"player": uid, "direction": _}:
-                # TODO
-                player_uids = uid
-                map_rs = action["map_update"]
-                update = MovementUpdateMessage(
-                    type="movement_update",
-                    message=get_movement_message(action),
-                    map_update=map_rs,
                 )
             case {"player": uid, "fled": _}:
                 player_uids = uid

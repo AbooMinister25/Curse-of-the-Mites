@@ -517,6 +517,7 @@ class Player(Entity):
                 if valid_move:
                     map_rooms = [room.export() for room in self.game.rooms.values()]
                     map_rs = MapUpdate(type="map_update", map=map_rooms)
+
             result = {
                 "player": self.uid,
                 "direction": command["command"],
@@ -528,6 +529,33 @@ class Player(Entity):
             result = self._try_fleeing()
         else:
             result = self.commit_action(command["command"], command["target"])
+
+        return result
+
+    def move(self, direction: str) -> MovementDict | None:
+        valid_directions = {"north", "south", "east", "west"}
+
+        result = None
+        if direction in valid_directions:
+            reason = None
+            valid_move = False
+            map_rs = None
+
+            if self.in_combat:
+                reason = "combat"
+            else:
+                valid_move = self.game.move_player(self, direction)
+                if valid_move:
+                    map_rooms = [room.export() for room in self.game.rooms.values()]
+                    map_rs = MapUpdate(type="map_update", map=map_rooms)
+
+            result = {
+                "player": self.uid,
+                "direction": direction,
+                "success": valid_move,
+                "reason": reason,
+                "map_update": map_rs,
+            }
 
         return result
 
