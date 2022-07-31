@@ -176,7 +176,8 @@ class GameInterface(WebsocketApp):
                 if not rc.entity_uid == self.uid:
                     self.entities.entities[rc.entity_uid] = rc.entity_name
             else:
-                del self.entities.entities[rc.entity_uid]
+                if rc.entity_uid in self.entities.entities:
+                    del self.entities.entities[rc.entity_uid]
 
         self.entities.refresh()
 
