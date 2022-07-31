@@ -71,6 +71,7 @@ class Map(Widget):
                                     else "blue",
                                 )
                             )
+                            break
                         else:
                             display.append(
                                 Text(
