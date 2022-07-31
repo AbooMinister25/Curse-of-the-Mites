@@ -117,24 +117,21 @@ class Game:
                 # but its WEAK. This lets a player learn the game in a safe environment
                 # this acts as a tutorial without being EA handhold-y
                 m = Mob("Mite", ["annoy"], self)
-                # print(f"Adding mite at {room.get_map_location()}")
-                room.add_mob(m)
+                self.add_mob(m, room.display_x, room.display_y)
                 continue
             if isinstance(room, Wall):
                 continue
             if isinstance(room, SpidersDen):
                 # Sting will be difficult, the also dont have annoy, so they are going to hit hard
                 m = Mob("Spider", ["sting", "eat_berry", "nibble"], self)
-                # print(f"Adding spider at {room.get_map_location()}")
-                room.add_mob(m)
+                self.add_mob(m, room.display_x, room.display_y)
                 continue
             chance_to_spawn = random.randint(0, 100)
 
             # if there are too many mobs, make this magic number lower
             if chance_to_spawn < 25:
                 m = Mob("Mite", ["nibble", "eat_berry", "stomp", "annoy"], self)
-                # print(f"Adding mite at {room.get_map_location()}")
-                room.add_mob(m)
+                self.add_mob(m, room.display_x, room.display_y)
 
     def build_map(self) -> None:
         largest_x = 0
