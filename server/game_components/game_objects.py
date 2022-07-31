@@ -322,6 +322,7 @@ mobs = []
 
 
 class Entity(ABC):
+    __number_of_entities: int = 0
     health: int
     max_health: int
     mana: int
@@ -352,10 +353,12 @@ class Entity(ABC):
             temp[_action] = all_actions[_action]
         self.in_room = None
         self.allowed_actions = temp
-
+        Entity.__number_of_entities += 1
         now = time.time_ns()
         m = hashlib.sha256()
-        data = f"{self.name},{str(now)},{str(_allowed_actions)}"
+        data = (
+            f"{self.name},{str(now)},{str(_allowed_actions)}{self.__number_of_entities}"
+        )
         m.update(data.encode())
         self.uid = int(m.hexdigest(), 16)
 
