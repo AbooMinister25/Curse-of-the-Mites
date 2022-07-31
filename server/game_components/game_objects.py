@@ -397,12 +397,17 @@ class Entity(ABC):
                     self.in_room.events.append(full_update)
 
         if not self.alive:
-            self.in_room.events.append(
-                {"room_of_death": self.in_room, "deceased": self}
-            )
+            # Avoids sending a "player died" message right after a "player won" message.
+            # ... even tho it's quite funny.
+            if not (isinstance(self, Player) and self.won):
+                self.in_room.events.append(
+                    {"room_of_death": self.in_room, "deceased": self}
+                )
 
     def enforce_aliveness(self) -> None:
-        self.alive = self.health > 0
+        self.alive = (
+            self.health > 0 and self.alive
+        )  # Makes sure a winning player doesn't "revive" when we are trying to clean it.
 
 
 class Mob(Entity):
@@ -556,6 +561,7 @@ class Player(Entity):
 
         if self.level >= 5:
             self.won = True
+            self.alive = False  # This make sure we get cleaned from the game :)
 
     def add_command_to_queue(
         self, _command: str, _target: Entity | None = None

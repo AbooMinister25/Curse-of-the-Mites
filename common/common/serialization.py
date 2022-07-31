@@ -5,6 +5,7 @@ from .schemas import (
     CLIENT_REQUEST,
     DEATH,
     SERVER_RESPONSE,
+    WIN,
     ActionNoTargetRequest,
     ActionResponse,
     ActionUpdateMessage,
@@ -50,6 +51,8 @@ def deserialize_server_response(event: dict[str, typing.Any]) -> SERVER_RESPONSE
             return RoomChangeUpdate(**event)
         case {"type": "DEATH"}:
             return DEATH(**event)
+        case {"type": "WIN"}:
+            return WIN(**event)
         case {"type": "level_up"}:
             return LevelUpNotification(**event)
         case _:

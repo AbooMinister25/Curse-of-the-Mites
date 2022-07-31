@@ -1,7 +1,7 @@
 import time
 from asyncio import Queue
 
-from common.schemas import LevelUpNotification, RoomChangeUpdate
+from common.schemas import WIN, LevelUpNotification, RoomChangeUpdate
 
 if __name__ == "__main__":
     from game_objects import (
@@ -53,6 +53,7 @@ OUT_QUEUE = (
     | FleeDict
     | RoomChangeUpdate
     | LevelUpNotification
+    | WIN
     | int
 )
 
@@ -208,8 +209,11 @@ class Game:
             action_performed = player.update()
 
             if player.won:
-                # TODO
-                pass
+                win = {
+                    "type": WIN(type="WIN"),
+                    "uid": player_uid,
+                }
+                await self.out_queue.put(win)
             elif player.level_past_tick < player.level:
                 level_up = {
                     "type": LevelUpNotification(

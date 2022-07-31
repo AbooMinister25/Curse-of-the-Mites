@@ -19,6 +19,7 @@ from websockets.legacy.server import WebSocketServerProtocol
 from common.schemas import (
     CLIENT_REQUEST,
     DEATH,
+    WIN,
     ActionNoTargetRequest,
     ActionResponse,
     ActionUpdateMessage,
@@ -44,8 +45,13 @@ game = Game()
 test_ant = Mob(
     "Test Ant", ["bite"], game
 )  # TODO: find a better place for our trusty test ant.
-test_ant.health = 3
 game.add_mob(test_ant, 24, 16)
+
+
+test_ant2 = Mob(
+    "Test Ant2", ["bite"], game
+)  # TODO: find a better place for our trusty test ant.
+game.add_mob(test_ant2, 24, 16)
 
 
 def deserialize(message: str | bytes) -> CLIENT_REQUEST:
@@ -212,6 +218,13 @@ async def send_updates(out_queue: asyncio.Queue):
             case {"type": (LevelUpNotification() as notif), "uid": uid}:
                 player_uids = uid
                 update = notif
+            case {"type": (WIN() as win), "uid": player_uid}:
+                player_uids = await get_win_update_uids(player_uid, win)
+                player_name = game.get_player(player_uid).name
+                update = ActionUpdateMessage(
+                    type="update",
+                    message=f"`{player_name}` became a beautiful butterfly and won!",
+                )
             case {"caster": uid}:
                 player_uids = uid
                 update = ActionUpdateMessage(
@@ -354,6 +367,15 @@ async def handle_dead_player_with_care(player_uid: int):
 
     if deceased_connection is not None:
         await deceased_connection.send(tactful_message.json())
+
+
+async def get_win_update_uids(winner_uid: int, win: WIN) -> set[int]:
+    winner_connection = connections.get(winner_uid)
+    if winner_connection is not None:
+        await winner_connection.send(win.json())
+
+    # If a player won then tell the entire server!
+    return {player_uid for player_uid in connections.keys() if player_uid != winner_uid}
 
 
 def get_room_update_message(room_action: RoomActionDict) -> str:

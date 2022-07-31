@@ -104,6 +104,10 @@ class DEATH(MessageBase[Literal["DEATH"]]):
     """
 
 
+class WIN(MessageBase[Literal["WIN"]]):
+    """Congrats! You win."""
+
+
 CLIENT_REQUEST = (
     ChatMessage
     | InitializePlayer
@@ -119,5 +123,6 @@ SERVER_RESPONSE = (
     | ActionUpdateMessage
     | RoomChangeUpdate
     | DEATH
+    | WIN
 )
 MESSAGE = CLIENT_REQUEST | SERVER_RESPONSE
