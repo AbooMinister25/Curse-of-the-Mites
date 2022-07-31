@@ -503,29 +503,59 @@ class Player(Entity):
 
         result = None
         if command["command"] in movement_commands:
-            reason = None
-            valid_move = False
-            map_rs = None
-            if self.in_combat:
-                reason = "combat"
-            else:
-                valid_move = self.game.move_player(self, command["command"])
-                if valid_move:
-                    map_rooms = [room.export() for room in self.game.rooms.values()]
-                    map_rs = MapUpdate(type="map_update", map=map_rooms)
-            result = {
-                "player": self.uid,
-                "direction": command["command"],
-                "success": valid_move,
-                "reason": reason,
-                "map_update": map_rs,
-            }
+            result = self._handle_movement(command)
         elif command["command"] == "flee":
             result = self._try_fleeing()
         else:
             result = self.commit_action(command["command"], command["target"])
 
         return result
+
+    def _handle_movement(self, command) -> MovementDict:
+        reason = None
+        valid_move = False
+        map_rs = None
+        if self.in_combat:
+            reason = "combat"
+        else:
+            valid_move = self.game.move_player(self, command["command"])
+            if valid_move:
+                map_rooms = [room.export() for room in self.game.rooms.values()]
+                rc_update = self._create_room_change_update_list()
+                map_rs = MapUpdate(
+                    type="map_update",
+                    map=map_rooms,
+                    entities=rc_update,
+                )
+        result = {
+            "player": self.uid,
+            "direction": command["command"],
+            "success": valid_move,
+            "reason": reason,
+            "map_update": map_rs,
+        }
+
+        return result
+
+    def _create_room_change_update_list(self) -> list[RoomChangeUpdate]:
+        room = self.in_room
+
+        mobs = {mob for mob in room.get_mobs()}
+        players = {player for player in room.get_players()}
+        all_entities: set[Entity] = mobs | players
+
+        room_change = [
+            RoomChangeUpdate(
+                type="room_change",
+                room_uid=self.in_room.uid,
+                entity_uid=entity.uid,
+                entity_name=entity.name,
+                enters=True,
+            )
+            for entity in all_entities
+        ]
+
+        return room_change
 
     def _start_combats_in_room(self, actions: list[ActionDict]) -> None:
         """Makes sure combats start in the current room if needed."""

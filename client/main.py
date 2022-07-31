@@ -53,9 +53,11 @@ class GameInterface(WebsocketApp):
         )
         self.map = Map()
 
+        self.entities = Entities()
+
         grid.place(
             map_area=self.map,
-            entities_area=Entities(),
+            entities_area=self.entities,
             events_area=self.console_widget,
             available_commands_area=self.available_commands_widget,
         )

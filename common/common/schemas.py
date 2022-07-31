@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Generic, Literal, TypedDict, TypeVar
 
 from pydantic import BaseModel
@@ -80,12 +82,6 @@ class ActionResponse(MessageBase[Literal["action_response"]]):
     response: str
 
 
-class MapUpdate(MessageBase[Literal["map_update"]]):
-    """Sent by the server to update the client on the details of the map"""
-
-    map: list[ExportedData]
-
-
 class ActionUpdateMessage(MessageBase[Literal["update"]]):
     """Message sent by the server after a game ticks.
 
@@ -102,6 +98,13 @@ class RoomChangeUpdate(MessageBase[Literal["room_change"]]):
     entity_uid: int
     entity_name: str
     enters: bool  # If False then it's leaving.
+
+
+class MapUpdate(MessageBase[Literal["map_update"]]):
+    """Sent by the server to update the client on the details of the map"""
+
+    map: list[ExportedData]
+    entities: list[RoomChangeUpdate]
 
 
 class MovementUpdateMessage(MessageBase[Literal["movement_update"]]):

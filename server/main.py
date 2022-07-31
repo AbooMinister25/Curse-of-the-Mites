@@ -201,11 +201,6 @@ async def handle_movement(req: MovementRequest, ws: WebSocketServerProtocol):
     response = ActionResponse(type="action_response", response="Added move to queue.")
 
     await ws.send(response.json())
-    """    map_rooms = [room.export() for room in game.rooms.values()]
-    map_rs = MapUpdate(type="map_update", map=map_rooms)
-
-    await ws.send(map_rs.json())
-    """
 
 
 async def websocket_handling() -> None:
