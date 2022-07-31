@@ -33,6 +33,15 @@ def make_map_grid() -> Table:
     return map_grid
 
 
+STORY: list[str] = [
+    "CURSE OF THE MITES",
+    "This forest is plagued by Confusing Bugs!",
+    "A pesky species of mites that infects other bugs and scrambles their brains...",
+    "Your only hope as a caterpillar is to grow into a butterfly and escape the forest!",
+    "(just kill a bunch of stuff and you'll be fine)",
+]
+
+
 class Map(Widget):
 
     grid = Reactive(make_map_grid())
@@ -42,6 +51,12 @@ class Map(Widget):
         super().__init__(name)
 
     def render(self) -> Panel:
+        if not self.main_app.initialized:
+            return Panel(
+                Align.center("\n".join(STORY), vertical="middle"),
+                border_style="green",
+                title="The Story.",
+            )
         return Panel(
             Padding(Align.center(self.grid, vertical="middle")),
             border_style="green",
