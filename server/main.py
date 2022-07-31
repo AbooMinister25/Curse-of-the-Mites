@@ -76,22 +76,6 @@ async def initialize_player(connection: WebSocketServerProtocol) -> Player:
     return player
 
 
-# async def initialize_map(websocket: WebSocketServerProtocol) -> None:
-#     """Fetches and sends the game map data to the client"""
-#     event = deserialize(await websocket.recv())
-
-#     if not isinstance(event, MapRequest):
-#         raise InvalidMessage("Expected an `init_map` message.")
-
-#     rooms = [room.export() for room in game.rooms.values()]
-
-#     response = MapResponse(
-#         type="map_response",
-#         rooms=rooms,
-#     )
-#     await websocket.send(response.json())
-
-
 async def register(websocket: WebSocketServerProtocol) -> None:
     """Adds a player's connections to connections and removes them when they disconnect."""
     registered_player = await initialize_player(websocket)

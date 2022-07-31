@@ -1,3 +1,4 @@
+import typing
 from dataclasses import dataclass
 
 from rich.align import Align
@@ -7,6 +8,9 @@ from rich.table import Table
 from rich.text import Text
 from textual.reactive import Reactive
 from textual.widget import Widget
+
+if typing.TYPE_CHECKING:
+    from main import GameInterface
 
 
 @dataclass
@@ -33,6 +37,10 @@ class Map(Widget):
     mouse_over = Reactive(False)
     grid = Reactive(make_map_grid())
 
+    def __init__(self, main_app: "GameInterface", name: str | None = None):
+        self.main_app = main_app
+        super().__init__(name)
+
     def render(self) -> Panel:
         return Panel(
             Padding(Align.center(self.grid, vertical="middle")),
@@ -44,21 +52,23 @@ class Map(Widget):
         """Renders the map using the given tiles"""
         map_grid = Table.grid()
 
-        for _ in range(33):
+        for _ in range(35):
             map_grid.add_column()
 
         for i in range(30):
             usable_tiles = [tile for tile in tiles if tile.y == i]
             display: list[Text] = []
 
-            for y in range(33):
+            for y in range(35):
                 for tile in usable_tiles:
                     if tile.x == y:
-                        if tile.players:
+                        for player in tile.players:
                             display.append(
                                 Text(
                                     "@ ",
-                                    "yellow",
+                                    "yellow"
+                                    if player["uid"] == self.main_app.uid
+                                    else "blue",
                                 )
                             )
                         else:
