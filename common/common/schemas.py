@@ -1,4 +1,4 @@
-from typing import Generic, Literal, TypeVar
+from typing import Generic, Literal, TypedDict, TypeVar
 
 from pydantic import BaseModel
 
@@ -32,10 +32,24 @@ class PlayerSchema(BaseModel):
     allowed_actions: set[str]
 
 
+class ExportedData(TypedDict):
+    uid: int
+    color: tuple[int, int, int]
+    display_char: str
+    x: int
+    y: int
+    title: str
+    description: str
+    mobs: list
+    players: list
+    exits: list
+
+
 class RegistrationSuccessful(MessageBase[Literal["registration_successful"]]):
     """Sent by the server when the player successfully registers."""
 
     player: PlayerSchema
+    map: list[ExportedData]
 
 
 class ActionNoTargetRequest(MessageBase[Literal["action"]]):
@@ -64,6 +78,12 @@ class ActionResponse(MessageBase[Literal["action_response"]]):
     """Response to an action which the client sent."""
 
     response: str
+
+
+class MapUpdate(MessageBase[Literal["map_update"]]):
+    """Sent by the server to update the client on the details of the map"""
+
+    map: list[ExportedData]
 
 
 class ActionUpdateMessage(MessageBase[Literal["update"]]):
@@ -115,6 +135,7 @@ CLIENT_REQUEST = (
     | ActionWithTargetRequest
     | MovementRequest
 )
+
 SERVER_RESPONSE = (
     RegistrationSuccessful
     | LevelUpNotification
@@ -124,5 +145,6 @@ SERVER_RESPONSE = (
     | RoomChangeUpdate
     | DEATH
     | WIN
+    | MapUpdate
 )
 MESSAGE = CLIENT_REQUEST | SERVER_RESPONSE

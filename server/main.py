@@ -27,6 +27,7 @@ from common.schemas import (
     ChatMessage,
     InitializePlayer,
     LevelUpNotification,
+    MapUpdate,
     MovementRequest,
     PlayerSchema,
     RegistrationSuccessful,
@@ -75,9 +76,26 @@ async def initialize_player(connection: WebSocketServerProtocol) -> Player:
     return player
 
 
+# async def initialize_map(websocket: WebSocketServerProtocol) -> None:
+#     """Fetches and sends the game map data to the client"""
+#     event = deserialize(await websocket.recv())
+
+#     if not isinstance(event, MapRequest):
+#         raise InvalidMessage("Expected an `init_map` message.")
+
+#     rooms = [room.export() for room in game.rooms.values()]
+
+#     response = MapResponse(
+#         type="map_response",
+#         rooms=rooms,
+#     )
+#     await websocket.send(response.json())
+
+
 async def register(websocket: WebSocketServerProtocol) -> None:
     """Adds a player's connections to connections and removes them when they disconnect."""
     registered_player = await initialize_player(websocket)
+    map_rooms = [room.export() for room in game.rooms.values()]
 
     registration_response = RegistrationSuccessful(
         type="registration_successful",
@@ -86,6 +104,7 @@ async def register(websocket: WebSocketServerProtocol) -> None:
             name=registered_player.name,
             allowed_actions=set(registered_player.allowed_actions),
         ),
+        map=map_rooms,
     )
 
     await websocket.send(registration_response.json())
@@ -182,6 +201,11 @@ async def handle_movement(req: MovementRequest, ws: WebSocketServerProtocol):
     response = ActionResponse(type="action_response", response="Added move to queue.")
 
     await ws.send(response.json())
+
+    map_rooms = [room.export() for room in game.rooms.values()]
+    map_rs = MapUpdate(type="map_update", map=map_rooms)
+
+    await ws.send(map_rs.json())
 
 
 async def websocket_handling() -> None:

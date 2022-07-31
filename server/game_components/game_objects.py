@@ -834,6 +834,7 @@ class BaseRoom(ABC):
         m.update(data.encode())
         self.uid = int(m.hexdigest(), 16)
         self.__title = _title
+        self.__description = _description
         self.__color = _color
         self.events = []
         self.__linked_rooms = _linked_rooms
@@ -1227,6 +1228,18 @@ class CommandDict(typing.TypedDict):
 class DisplayDict(typing.TypedDict):
     color: tuple[int, int, int]
     display_char: str
+
+
+class DisplayExport(typing.TypedDict):
+    color: tuple[int, int, int]
+    display_x: int
+    display_y: int
+    title: str
+    description: str
+    north: BaseRoom | None
+    east: BaseRoom | None
+    south: BaseRoom | None
+    west: BaseRoom | None
 
 
 class ExportedData(typing.TypedDict):

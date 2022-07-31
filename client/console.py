@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import functools
-import json
 import typing
 
 from rich import box
@@ -10,6 +9,14 @@ from rich.panel import Panel
 from textual import events
 from textual.reactive import Reactive
 from textual.widget import Widget
+
+from common.schemas import (
+    ActionNoTargetRequest,
+    ActionWithTargetRequest,
+    ChatMessage,
+    InitializePlayer,
+    MovementRequest,
+)
 
 if typing.TYPE_CHECKING:
     from main import GameInterface
@@ -211,22 +218,20 @@ class Console(Widget):
 
     async def register(self, username: str) -> str:
         """Sends an init request to the server to initialize our player."""
-        request = {"type": "init", "username": username}
-        await self.main_app.websocket.send(json.dumps(request))
-        self.initialized = True
+        p_request = InitializePlayer(type="init", username=username)
+        await self.main_app.websocket.send(p_request.json())
 
+        self.initialized = True
         return ""
 
     @enforce_initialization
     async def send_chat_message(self) -> str:
-        response = json.dumps(
-            {
-                "type": "chat",
-                "player_name": self.main_app.name,
-                "chat_message": self.message,
-            }
+        response = ChatMessage(
+            type="chat",
+            player_name=self.main_app.name,
+            chat_message=self.message,
         )
-        await self.main_app.websocket.send(response)
+        await self.main_app.websocket.send(response.json())
         return ""
 
     @enforce_initialization
@@ -234,27 +239,35 @@ class Console(Widget):
         target_uid = self.get_target(target)
 
         if target:
-            message = {
-                "type": "action",
-                "action": action[1:],
-                "target": target_uid,
-                "player": self.main_app.uid,
-            }
-            await self.main_app.websocket.send(json.dumps(message))
+            message = ActionWithTargetRequest(
+                type="action",
+                action=action[1:],
+                target=target_uid,
+                player=self.main_app.uid,
+            )
+            await self.main_app.websocket.send(message.json())
             return ""
         else:
             return "That target doesn't exist!"
 
     @enforce_initialization
     async def handle_action_without_target(self, action: str) -> str:
-        message = {"type": "action", "action": action[1:], "player": self.main_app.uid}
-        await self.main_app.websocket.send(json.dumps(message))
+        message = ActionNoTargetRequest(
+            type="action",
+            action=action[1:],
+            player=self.main_app.uid,
+        )
+        await self.main_app.websocket.send(message.json())
         return ""
 
     @enforce_initialization
     async def handle_movement(self, direction: str) -> str:
-        message = {"type": "move", "direction": direction, "player": self.main_app.uid}
-        await self.main_app.websocket.send(json.dumps(message))
+        message = MovementRequest(
+            type="move",
+            direction=direction,
+            player=self.main_app.uid,
+        )
+        await self.main_app.websocket.send(message.json())
         return ""
 
     def get_target(self, target_name: str) -> int | None:

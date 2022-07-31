@@ -4,7 +4,7 @@ from typing import Optional
 from available_commands import AvailableCommands
 from console import Console
 from entities import Entities
-from map import Map
+from map import Map, RenderData
 from websocket_app import WebsocketApp
 
 from common.schemas import (
@@ -14,6 +14,7 @@ from common.schemas import (
     ActionUpdateMessage,
     ChatMessage,
     LevelUpNotification,
+    MapUpdate,
     RegistrationSuccessful,
     RoomChangeUpdate,
 )
@@ -50,9 +51,10 @@ class GameInterface(WebsocketApp):
         self.available_commands_widget = AvailableCommands(
             main_app=self, name="Available Commands"
         )
+        self.map = Map()
 
         grid.place(
-            map_area=Map(),
+            map_area=self.map,
             entities_area=Entities(),
             events_area=self.console_widget,
             available_commands_area=self.available_commands_widget,
@@ -81,6 +83,20 @@ class GameInterface(WebsocketApp):
                     self.console_widget.out.add_log(
                         f"Correctly registered as {self.name}"
                     )
+                    self.console_widget.refresh()
+
+                    tiles = [
+                        RenderData(room["color"], room["x"], room["y"], room["players"])
+                        for room in event.map
+                    ]
+
+                    self.map.render_from(tiles)
+                case MapUpdate():
+                    tiles = [
+                        RenderData(room["color"], room["x"], room["y"], room["players"])
+                        for room in event.map
+                    ]
+                    self.map.render_from(tiles)
                     self.available_commands_widget.refresh()
                 case ActionResponse():
                     self.console_widget.out.add_log(event.response)

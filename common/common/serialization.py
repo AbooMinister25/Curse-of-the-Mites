@@ -13,6 +13,7 @@ from .schemas import (
     ChatMessage,
     InitializePlayer,
     LevelUpNotification,
+    MapUpdate,
     MovementRequest,
     RegistrationSuccessful,
     RoomChangeUpdate,
@@ -45,6 +46,8 @@ def deserialize_server_response(event: dict[str, typing.Any]) -> SERVER_RESPONSE
             return RegistrationSuccessful(**event)
         case {"type": "action_response"}:
             return ActionResponse(**event)
+        case {"type": "map_update"}:
+            return MapUpdate(**event)
         case {"type": "update"}:
             return ActionUpdateMessage(**event)
         case {"type": "room_change"}:
