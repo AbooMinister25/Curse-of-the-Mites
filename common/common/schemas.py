@@ -45,11 +45,27 @@ class ExportedData(TypedDict):
     exits: list
 
 
+class RoomChangeUpdate(MessageBase[Literal["room_change"]]):
+    """Message sent by the server after an entity enters or leaves a room."""
+
+    room_uid: int
+    entity_uid: int
+    entity_name: str
+    enters: bool  # If False then it's leaving.
+
+
+class MapUpdate(MessageBase[Literal["map_update"]]):
+    """Sent by the server to update the client on the details of the map"""
+
+    map: list[ExportedData]
+    entities: list[RoomChangeUpdate]
+
+
 class RegistrationSuccessful(MessageBase[Literal["registration_successful"]]):
     """Sent by the server when the player successfully registers."""
 
     player: PlayerSchema
-    map: list[ExportedData]
+    map: MapUpdate
 
 
 class ActionNoTargetRequest(MessageBase[Literal["action"]]):
@@ -80,12 +96,6 @@ class ActionResponse(MessageBase[Literal["action_response"]]):
     response: str
 
 
-class MapUpdate(MessageBase[Literal["map_update"]]):
-    """Sent by the server to update the client on the details of the map"""
-
-    map: list[ExportedData]
-
-
 class ActionUpdateMessage(MessageBase[Literal["update"]]):
     """Message sent by the server after a game ticks.
 
@@ -93,15 +103,6 @@ class ActionUpdateMessage(MessageBase[Literal["update"]]):
     """
 
     message: str
-
-
-class RoomChangeUpdate(MessageBase[Literal["room_change"]]):
-    """Message sent by the server after an entity enters or leaves a room."""
-
-    room_uid: int
-    entity_uid: int
-    entity_name: str
-    enters: bool  # If False then it's leaving.
 
 
 class MovementUpdateMessage(MessageBase[Literal["movement_update"]]):

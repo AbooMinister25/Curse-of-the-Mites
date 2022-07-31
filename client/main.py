@@ -53,9 +53,11 @@ class GameInterface(WebsocketApp):
         )
         self.map = Map(main_app=self, name="Map")
 
+        self.entities = Entities()
+
         grid.place(
             map_area=self.map,
-            entities_area=Entities(),
+            entities_area=self.entities,
             events_area=self.console_widget,
             available_commands_area=self.available_commands_widget,
         )
@@ -87,11 +89,13 @@ class GameInterface(WebsocketApp):
 
                     tiles = [
                         RenderData(room["color"], room["x"], room["y"], room["players"])
-                        for room in event.map
+                        for room in event.map.map
                     ]
 
                     self.map.render_from(tiles)
                     self.map.refresh()
+
+                    self._handle_rc_updates(event.map.entities)
                 case MovementUpdateMessage():
                     self.console_widget.out.add_log(event.message)
 
@@ -103,6 +107,11 @@ class GameInterface(WebsocketApp):
                             )
                             for room in map_update.map
                         ]
+                        self.console_widget.out.add_log(
+                            map_update.entities[-1].entity_name
+                        )
+                        self._handle_rc_updates(map_update.entities)
+
                         self.map.render_from(tiles)
                         self.map.refresh()
                     self.available_commands_widget.refresh()
@@ -115,7 +124,11 @@ class GameInterface(WebsocketApp):
                     self.console_widget.out.add_log(
                         f"`{event.entity_name}` {e_or_l} the room!"
                     )
-                    # TODO: display in entities in the room.
+                    self._handle_rc_updates(
+                        [
+                            event,
+                        ]
+                    )
                 case LevelUpNotification():
                     leveled = (
                         "!"
@@ -149,6 +162,16 @@ class GameInterface(WebsocketApp):
                     raise NotImplementedError(f"Unknown event {event!r}")
 
             self.console_widget.refresh()
+
+    def _handle_rc_updates(self, rc_updates: list[RoomChangeUpdate]) -> None:
+        for rc in rc_updates:
+            if rc.enters:
+                if not rc.entity_uid == self.uid:
+                    self.entities.entities[rc.entity_uid] = rc.entity_name
+            else:
+                del self.entities.entities[rc.entity_uid]
+
+        self.entities.refresh()
 
 
 try:
