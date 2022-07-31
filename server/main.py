@@ -97,6 +97,10 @@ async def register(websocket: WebSocketServerProtocol) -> None:
     try:
         await handler(websocket)
     finally:
+        player = game.get_player(registered_player.uid)
+        assert player  # Shouldn't ever be None, so its probably fine to stick an assert here
+        player.alive = False
+
         del connections[registered_player.uid]
 
 
