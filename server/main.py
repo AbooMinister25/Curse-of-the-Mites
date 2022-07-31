@@ -190,6 +190,8 @@ async def game_loop():
 
         await send_updates(game.out_queue)
 
+        game.clean_the_dead()
+
 
 async def send_updates(out_queue: asyncio.Queue):
     """Sends all the events in the queue to their respective players."""

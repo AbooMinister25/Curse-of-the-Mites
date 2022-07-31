@@ -196,9 +196,12 @@ class Game:
         return True
 
     async def update(self):
+        """One tick of the game!"""
+        # Update mobs.
         for mob_uid in self.mobs:
             self.mobs[mob_uid].update()
 
+        # Update players.
         for player_uid in self.players:
             action_performed = self.players[player_uid].update()
 
@@ -213,6 +216,7 @@ class Game:
                 case _:
                     await self.out_queue.put({"no_action": action_performed})
 
+        # Handle events in rooms.
         for room_uid in self.rooms:
             for event in self.rooms[room_uid].events:
                 await self.out_queue.put(event)
@@ -221,6 +225,18 @@ class Game:
             ].events = (
                 []
             )  # If an event was missed for whatever reason... to bad... it's a feature!
+
+    def clean_the_dead(self):
+        ## First the mobs.
+        mobs_to_pop = []
+        for mob_uid in self.mobs:
+            mob = self.mobs[mob_uid]
+            if not mob.alive:
+                room = mob.in_room
+                room.remove_mob(mob)
+                mobs_to_pop.append(mob_uid)
+        for mob_uid in mobs_to_pop:
+            self.mobs.pop(mob_uid)
 
 
 if __name__ == "__main__":

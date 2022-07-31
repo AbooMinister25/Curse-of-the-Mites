@@ -418,7 +418,8 @@ class Mob(Entity):
     def _handle_combat(self) -> list[ActionDict] | None:
         """Allows the mob to act if it is in combat."""
         res = None
-        if self.uid in self.in_room.mob_combatants:
+        # Poor mob doesn't realise it died yet otherwise.
+        if (self.health > 0) and (self.uid in self.in_room.mob_combatants):
             if len(self.in_room.player_combatants) == 0:
                 # There are no players left to fight, so stop fighting.
                 self.in_room.mob_combatants.pop(self.uid)
