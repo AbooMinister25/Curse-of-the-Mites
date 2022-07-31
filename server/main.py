@@ -119,7 +119,6 @@ async def handle_action_with_target(
     req: ActionWithTargetRequest, ws: WebSocketServerProtocol
 ):
     action = messed_players[req.player].actions.get(req.action)
-
     if action is None:
         response = ActionResponse(
             type="action_response", response=f"You can't {req.action}!"
@@ -128,7 +127,7 @@ async def handle_action_with_target(
         target = game.get_mob(req.target)
 
         if target is not None:
-            game.get_player(req.player).add_command_to_queue(req.action, target)
+            game.get_player(req.player).add_command_to_queue(action.name, target)
             response = ActionResponse(
                 type="action_response", response="Added action to queue."
             )
@@ -153,7 +152,7 @@ async def handle_action_without_target(
 
     response = None
     if req.action in NO_SHUFFLE:
-        game.get_player(req.player).add_command_to_queue(req.action)
+        game.get_player(req.player).add_command_to_queue(action.name)
         response = ActionResponse(
             type="action_response", response=get_no_shuffle_response(req.action)
         )
