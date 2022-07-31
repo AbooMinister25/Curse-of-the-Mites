@@ -41,6 +41,12 @@ STORY: list[str] = [
     "(just kill a bunch of stuff and you'll be fine)",
 ]
 
+DEATH: list[str] = [
+    "YOU DIED.",
+    "Press `ctrl+c` if you wish to leave this limbo.",
+    "I know... it's a feature don't worry",
+]
+
 
 class Map(Widget):
 
@@ -51,6 +57,12 @@ class Map(Widget):
         super().__init__(name)
 
     def render(self) -> Panel:
+        if self.main_app.lost:
+            return Panel(
+                Align.center("\n".join(DEATH), vertical="middle"),
+                border_style="green",
+                title="GAME OVER.",
+            )
         if not self.main_app.initialized:
             return Panel(
                 Align.center("\n".join(STORY), vertical="middle"),

@@ -27,7 +27,8 @@ class GameInterface(WebsocketApp):
     name: Optional[str] = None
     uid: Optional[int] = None
     initialized: bool = False
-    game_over: bool = False
+    won: bool = False
+    lost: bool = False
 
     async def on_mount(self) -> None:
         grid = await self.view.dock_grid(edge="left", name="left")
@@ -142,19 +143,15 @@ class GameInterface(WebsocketApp):
                 case DEATH():
                     # TODO: more properly display the death.
                     self.initialized = False
-                    self.game_over = True
+                    self.lost = True
                     self.console_widget.message = ""
-                    self.console_widget.out.console_log = [
-                        "YOU DIED.",
-                        "Press `ctrl+c` if you wish to leave this limbo.",
-                        "I know... it's a feature don't worry",
-                    ]
+                    self.console_widget.out.console_log = []
                     self.console_widget.out.full_log = (
                         self.console_widget.out.console_log
                     )
                 case WIN():
                     self.initialized = False
-                    self.game_over = True  # A happy kind of game over :)
+                    self.won = True  # A happy kind of game over :)
                     self.console_widget.message = ""
                     self.console_widget.out.console_log = ["YOU WON"]
                     self.console_widget.out.full_log = (
