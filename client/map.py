@@ -50,13 +50,13 @@ DEATH: list[str] = [
 
 def WIN(name: str) -> list[str]:
     return [
-        "You became a beautiful butterfly and won!!!",
+        "`You became a beautiful butterfly and won!!!`",
         f"{name}: really, just like that?",
-        "Yup.",
+        "`Yup`.",
         f"{name}: just kill 5 mobs and win?",
-        "Mhmhm",
+        "`Mhmhm`",
         f"{name}: No metamorphosis? No coocoon? Nada?",
-        "Well you see... you're a very special kind of butterfly... You're a `fyyachure` butterfly",
+        "Well you see... you're a very special kind of butterfly... You're a `fyyachure` butterfly ;)",
         "Anyways... if you want more of a challenge try killing the 5 spiders I guess.",
     ]
 

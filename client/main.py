@@ -144,6 +144,7 @@ class GameInterface(WebsocketApp):
                     # TODO: more properly display the death.
                     self.initialized = False
                     self.lost = True
+                    self.map.refresh()
                     self.console_widget.message = ""
                     self.console_widget.out.console_log = []
                     self.console_widget.out.full_log = (
@@ -152,8 +153,9 @@ class GameInterface(WebsocketApp):
                 case WIN():
                     self.initialized = False
                     self.won = True  # A happy kind of game over :)
+                    self.map.refresh()
                     self.console_widget.message = ""
-                    self.console_widget.out.console_log = ["YOU WON"]
+                    self.console_widget.out.console_log = []
                     self.console_widget.out.full_log = (
                         self.console_widget.out.console_log
                     )
