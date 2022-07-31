@@ -209,7 +209,8 @@ async def game_loop():
         players_to_clean = game.clean_the_dead()
 
         for player_uid in players_to_clean:
-            connections.pop(player_uid)
+            if player_uid in connections:
+                connections.pop(player_uid)
 
 
 async def send_updates(out_queue: asyncio.Queue):
