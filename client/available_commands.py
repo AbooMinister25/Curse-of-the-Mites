@@ -16,8 +16,10 @@ class AvailableCommands(Widget):
     """Shows the available commands the player can make"""
 
     mouse_over = Reactive(False)
+    MOVE_COMMANDS_MESSAGE: list[str] = ["!move", "(north | south | east | west)"]
+    SPECIAL_COMMANDS: list[str] = ["!flee", "!nvm", "!clear"]
     available_commands: Reactive[list[str]] = Reactive(
-        ["north", "east", "south", "west", "flee"]
+        MOVE_COMMANDS_MESSAGE + SPECIAL_COMMANDS + []
     )
 
     def __init__(self, main_app: GameInterface, name: str | None = None):

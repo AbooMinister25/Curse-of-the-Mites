@@ -86,6 +86,48 @@ class MapUpdate(MessageBase[Literal["map_update"]]):
     map: list[ExportedData]
 
 
+class ActionUpdateMessage(MessageBase[Literal["update"]]):
+    """Message sent by the server after a game ticks.
+
+    It contains a message to be displayed about the result of the player's queued action.
+    """
+
+    message: str
+
+
+class RoomChangeUpdate(MessageBase[Literal["room_change"]]):
+    """Message sent by the server after an entity enters or leaves a room."""
+
+    room_uid: int
+    entity_uid: int
+    entity_name: str
+    enters: bool  # If False then it's leaving.
+
+
+class RoomInformationMessage(MessageBase[Literal["room_info"]]):
+    """Message sent to a player that's entering a new room."""
+
+    entities: list[RoomChangeUpdate]
+
+
+class LevelUpNotification(MessageBase[Literal["level_up"]]):
+    """Message sent by the server to a player that levels up."""
+
+    times_leveled: int  # In case a player levels up more than once.
+    current_level: int
+
+
+class DEATH(MessageBase[Literal["DEATH"]]):
+    """Too bad! You died.
+
+    Sent to the player when they get an ice cream :P
+    """
+
+
+class WIN(MessageBase[Literal["WIN"]]):
+    """Congrats! You win."""
+
+
 CLIENT_REQUEST = (
     ChatMessage
     | InitializePlayer
@@ -93,5 +135,16 @@ CLIENT_REQUEST = (
     | ActionWithTargetRequest
     | MovementRequest
 )
-SERVER_RESPONSE = RegistrationSuccessful | ActionResponse | ChatMessage | MapUpdate
+
+SERVER_RESPONSE = (
+    RegistrationSuccessful
+    | LevelUpNotification
+    | ActionResponse
+    | ChatMessage
+    | ActionUpdateMessage
+    | RoomChangeUpdate
+    | DEATH
+    | WIN
+    | MapUpdate
+)
 MESSAGE = CLIENT_REQUEST | SERVER_RESPONSE

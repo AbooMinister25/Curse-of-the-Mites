@@ -140,6 +140,9 @@ class Console(Widget):
         )
 
     async def on_key(self, event: events.Key):
+        if self.main_app.game_over:
+            return  # Sorry, no inputs for you!
+
         key = event.key
         match key:
             case "enter":
@@ -201,6 +204,8 @@ class Console(Widget):
                     log_display = await self.handle_movement(direction)
                 else:
                     log_display = f"{direction} isn't a direction!"
+            case [("!flee" | "!nvm" | "!clear") as action]:
+                log_display = await self.handle_action_without_target(action)
             case [action, target] if self.message.startswith("!"):
                 log_display = await self.handle_action_with_target(action, target)
             case [action] if self.message.startswith("!"):

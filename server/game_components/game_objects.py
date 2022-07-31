@@ -6,6 +6,8 @@ import time
 import typing
 from abc import ABC, abstractmethod  # abstract classes
 
+from common.schemas import RoomChangeUpdate
+
 if typing.TYPE_CHECKING:
     from game import Game
 
@@ -368,41 +370,109 @@ class Entity(ABC):
         return f"{str(self.uid)[0:4]} {status} {self.__class__.__name__} {self.name} {moves}"
 
     @abstractmethod
-    def update(self):
+    def update(self, actions: list[ActionDict] | None = None):
         if self.mana > self.max_mana:
             self.mana = self.max_mana
         if self.health > self.max_health:
             self.health = self.max_health
+
+        self.enforce_aliveness()
+
+        self._send_updates_to_the_room(actions)
         pass
+
+    def _send_updates_to_the_room(self, actions: list[ActionDict]) -> None:
+        """Adds to the list of updates that must be sent to players in the room."""
+        assert self.in_room
+
+        if actions is not None:
+            for action in actions:
+                # Only send successful actions to avoid spamming.
+                if action["cast"] and action["hit"]:
+                    full_update: RoomActionDict = {
+                        "type": "room_action",
+                        "room": self.in_room,
+                        "action": action,
+                    }
+                    self.in_room.events.append(full_update)
+
+        if not self.alive:
+            # Avoids sending a "player died" message right after a "player won" message.
+            # ... even tho it's quite funny.
+            if not (isinstance(self, Player) and self.won):
+                self.in_room.events.append(
+                    {"room_of_death": self.in_room, "deceased": self}
+                )
+
+    def enforce_aliveness(self) -> None:
+        self.alive = (
+            self.health > 0 and self.alive
+        )  # Makes sure a winning player doesn't "revive" when we are trying to clean it.
 
 
 class Mob(Entity):
     def update(self):
         self.mana += 7
         self.health += random.randint(1, 3)
-        super().update()
+
+        self.enforce_aliveness()
+
+        if not self.alive:
+            # Level up every player that was part of the combat (even if maybe they didn't do much).
+            for player_uid in self.in_room.player_combatants:
+                player = self.game.get_player(player_uid)
+                if player is not None:
+                    player.level_up()
+
+        actions = self._handle_combat()
+        super().update(actions=actions)
         pass
 
-    def __init__(self, _name: str, _allowed_actions: list[str]):
+    def __init__(self, _name: str, _allowed_actions: list[str], game: Game):
+        self.game = game
         super().__init__(_name, _allowed_actions)
 
+    def _handle_combat(self) -> list[ActionDict] | None:
+        """Allows the mob to act if it is in combat."""
+        res = None
 
-class AddCommandResult(typing.NamedTuple):
-    success: bool
-    message: str
+        if (self.alive) and (self.uid in self.in_room.mob_combatants):
+            if len(self.in_room.player_combatants) == 0:
+                # There are no players left to fight, so stop fighting.
+                self.in_room.mob_combatants.pop(self.uid)
+                self.in_combat = False
+            else:
+                res = self._act_in_combat()
+
+        return res
+
+    def _act_in_combat(self) -> list[ActionDict]:
+        action_choice = random.choice(list(self.allowed_actions.values()))
+        if action_choice.requires_target:
+            target_choice = random.choice(list(self.in_room.player_combatants))
+            res = self.commit_action(
+                action_choice.name, self.game.get_player(target_choice)
+            )
+        else:
+            res = self.commit_action(action_choice.name)
+
+        return res
 
 
 class Player(Entity):
     level: int
+    level_past_tick: int
     command_queue: list[dict[str, Entity | None]]
 
     def __init__(self, _name: str, _allowed_actions: list[str], game: Game):
         super().__init__(_name, _allowed_actions)
+        self.level_past_tick = 0
         self.level = 0
+        self.won = False
         self.command_queue = []
         self.game = game
 
-    def update(self) -> list[ActionDict] | MovementDict | None:
+    def update(self) -> list[ActionDict] | FleeDict | MovementDict | int:
         """Updates the player for one tick.
 
         Executes the next action in the players queue.
@@ -411,43 +481,91 @@ class Player(Entity):
         self.mana += 10
         self.health += random.randint(1, 5)
 
-        result = None
+        result = self.uid  # If we didn't do anything, return our UID anyways.
 
         if len(self.command_queue) > 0:
             next_command = self.command_queue.pop()
             result = self._do(next_command)
 
-        super().update()
+        if isinstance(result, list):
+            self._start_combats_in_room(result)
+            super().update(actions=result)
+        else:
+            super().update()
 
+        self._check_combat_end()
         return result
 
-    def _do(self, command: CommandDict) -> list[ActionDict] | MovementDict | None:
+    def _do(
+        self, command: CommandDict
+    ) -> list[ActionDict] | MovementDict | FleeDict | None:
         movement_commands = ["north", "east", "south", "west"]
 
         result = None
-        # TODO: Tell the player "HEY, YOU DID THIS THING"
         if command["command"] in movement_commands:
-            valid_move = self.game.move_player(self, command["command"])
+            reason = None
+            valid_move = False
+            if self.in_combat:
+                reason = "combat"
+            else:
+                valid_move = self.game.move_player(self, command["command"])
             result = {
                 "player": self.uid,
                 "direction": command["command"],
                 "success": valid_move,
+                "reason": reason,
             }
         elif command["command"] == "flee":
-            pass  # TODO: IMPLEMENT FLEEING.
+            result = self._try_fleeing()
         else:
             result = self.commit_action(command["command"], command["target"])
 
         return result
 
-    def send_events_to_player(self):
-        for event in self.events:
-            # TODO: SEND EVENTS TO THE PLAYER
-            pass
+    def _start_combats_in_room(self, actions: list[ActionDict]) -> None:
+        """Makes sure combats start in the current room if needed."""
+        for action in actions:
+            # Only start combat with mobs.
+            target = self.game.get_mob(action["target"])
+            if (
+                (target is not None)
+                and (action["cast"])
+                and (all_actions[action["name"]])
+            ):
+                self.in_room.player_combatants.add(self.uid)
+                self.in_room.mob_combatants.add(target.uid)
+                self.in_combat = True
+
+    def _check_combat_end(self) -> None:
+        """Ends combat automatically if there's no mobs left that want to fight."""
+        if self.in_combat:
+            # If you're engaged in combat and there's still mob combatants in the room,
+            # then you don't exit combat automatically.
+            self.in_combat = len(self.in_room.mob_combatants) > 0
+
+    def _try_fleeing(self) -> FleeDict:
+        FLEEING_CHANCE = 35  # Percent
+        success = False
+        was_in_combat = self.in_combat
+        if was_in_combat:
+            success = random.randint(1, 100) <= FLEEING_CHANCE
+            self.in_combat = not success
+
+        if success:
+            self.in_room.player_combatants.remove(self.uid)
+
+        return {"player": self.uid, "fled": success, "combat": was_in_combat}
+
+    def level_up(self):
+        self.level += 1
+
+        if self.level >= 5:
+            self.won = True
+            self.alive = False  # This make sure we get cleaned from the game :)
 
     def add_command_to_queue(
         self, _command: str, _target: Entity | None = None
-    ) -> AddCommandResult:
+    ) -> bool:
         """
         Adds a command to the player queue if it's valid.
 
@@ -457,7 +575,7 @@ class Player(Entity):
         """
         validity = self._check_command_validity(_command, _target)
 
-        if validity.success:
+        if validity:
             event = {"command": _command, "target": _target}
             self.command_queue.insert(0, event)
 
@@ -465,7 +583,7 @@ class Player(Entity):
 
     def _check_command_validity(
         self, _command: str, _target: Entity | None = None
-    ) -> AddCommandResult:
+    ) -> bool:
         """
         Checks that a command is valid.
 
@@ -473,43 +591,28 @@ class Player(Entity):
         :param _target: Entity to be targeted or None.
         :return:
         """
-        directions = ["north", "east", "south", "west"]
+        directions = ["north", "east", "south", "west", "flee"]
 
-        if _command == "flee":
-            # you tried to flee but you aren't in combat. idiot.
-            if not self.in_combat:
-                return AddCommandResult(
-                    False, "Silly, don't try to flee if you aren't in combat!"
-                )
-            else:
-                return AddCommandResult(True, "Added fleeing to your queue!")
-        if _command in directions:
-            # you tried to move but you are in combat. STOP.
-            if self.in_combat:
-                return AddCommandResult(
-                    False, "Don't just move like that when you're fighting!"
-                )
-            else:
-                return AddCommandResult(True, f"Moving {_command} added to your queue.")
         if _command in self.allowed_actions:
             # make sure actions that need a target get a target
             if self.allowed_actions[_command].requires_target and _target is None:
-                return AddCommandResult(False, f"{_command} requires a target!")
+                return False
             elif (
                 not self.allowed_actions[_command].requires_target
             ) and _target is not None:
-                return AddCommandResult(False, f"{_command} doesn't require a target!")
+                return False
+
         match _command:
             case "clear":
                 self.command_queue = []
-                return AddCommandResult(True, "Your queue was erased!")
+                # We did something but there's nothing to queue, so we return false.
+                return False
             case "nvm":
                 self.command_queue = self.command_queue[:-1]
-                return AddCommandResult(True, "Last command of the queue erased!")
-            case _ if _command in self.allowed_actions:
-                return AddCommandResult(True, f"{_command} added to your queue.")
+                # We did something but there's nothing to queue, so we return false.
+                return False
             case _:
-                return AddCommandResult(False, f"You can't do {_command}!")
+                return _command in directions or _command in self.allowed_actions
 
 
 class TargetsError(Exception):
@@ -568,6 +671,7 @@ class Action:
         self.__cost = _cost
         self.__hit_percentage = _hit_percentage
         self.name = _name
+        self.causes_combat = _causes_combat
 
     def action(self, _caster: Entity, _target: Entity | None) -> list[ActionDict]:
         """
@@ -643,6 +747,7 @@ class Action:
         hit = hit_check <= self.__hit_percentage
 
         result = {
+            "name": self.name,
             "caster": caster.uid,
             "target": target.uid,
             "hit": hit,
@@ -674,11 +779,14 @@ all_actions = {
     "stomp": Action("stomp", 15, 5, 15, 70, False, True, True),
     "spit": Action("spit", 25, 15, 50, 30, True, False, True),
     "eat_berry": Action("eat", 5, -5, -10, 100, False, False, False),
+    "annoy": Action("annoy", 0, 1, 1, 100, True, False, True),
+    "obliterate": Action(
+        "obliterate", 0, 1000, 10001, 100, True, False, True
+    ),  # Just for testing :p
 }
 
 
 class BaseRoom(ABC):
-    events: list[object]
     __title: str
     __description: str
     __linked_rooms: dict[str, None | BaseRoom]
@@ -692,6 +800,11 @@ class BaseRoom(ABC):
     display_x: int
     display_y: int
     can_entity_step: bool
+
+    mob_combatants: set[int]
+    player_combatants: set[int]
+
+    events: list[RoomActionDict | RoomChangeUpdate | DeathDict]
 
     def __init__(
         self,
@@ -730,6 +843,10 @@ class BaseRoom(ABC):
         self.__players = []
         self.display_x = _display_x
         self.display_y = _display_y
+
+        self.events = []
+        self.mob_combatants = set()
+        self.player_combatants = set()
 
         BaseRoom.number += 1
 
@@ -811,19 +928,39 @@ class BaseRoom(ABC):
     def get_mobs(self) -> list[Mob]:
         return self.__mobs
 
-    def add_player(self, _player: Player):
+    def add_player(self, player: Player):
         """
         Add player to room
 
         :param _player: player object to add
         :return:
         """
-        _player.in_room = self
-        self.__players.append(_player)
+        player.in_room = self
+        self.__players.append(player)
 
-    def remove_player(self, _player: Player):
-        _player.in_room = None
-        self.__players.remove(_player)
+        self.events.append(
+            RoomChangeUpdate(
+                type="room_change",
+                room_uid=self.uid,
+                entity_uid=player.uid,
+                entity_name=player.name,
+                enters=True,
+            )
+        )
+
+    def remove_player(self, player: Player):
+        player.in_room = None
+        self.__players.remove(player)
+
+        self.events.append(
+            RoomChangeUpdate(
+                type="room_change",
+                room_uid=self.uid,
+                entity_uid=player.uid,
+                entity_name=player.name,
+                enters=False,
+            )
+        )
 
     def add_mob(self, _mob: Mob):
         """
@@ -1061,104 +1198,6 @@ class RightLower(BaseRoom):
         self.can_entity_step = True
 
 
-class Combat:
-    participants: list[Entity]
-    participants_uids: set[int]
-    acted_this_round: list[Entity]
-    players: list[Player]
-    mobs: list[Mob]
-    done: bool
-    room: BaseRoom
-    uid: int
-
-    def __init__(self, _participants: list[Entity], _room: BaseRoom):
-        self.participants = _participants
-        self.participants_uids = set()
-        self.players = []
-        self.mobs = []
-        self.room = _room
-        self.done = False
-
-        for entity in self.participants:
-            self.participants_uids.add(entity.uid)
-            if isinstance(entity, Player):
-                self.players.append(entity)
-            if isinstance(entity, Mob):
-                self.mobs.append(entity)
-
-        combat_hash = hashlib.sha256()
-        data = f"{self.participants_uids}"
-        combat_hash.update(str(time.time_ns()).encode())
-        combat_hash.update(data.encode())
-        self.uid = int(combat_hash.hexdigest(), 16)
-
-    def remove_from_combat(self, entity: Entity):
-        self.participants_uids.remove(entity.uid)
-        self.participants.remove(entity)
-        if isinstance(entity, Player):
-            self.players.remove(entity)
-        if isinstance(entity, Mob):
-            self.mobs.remove(entity)
-
-    def __add_mob_to_combat(self, _mob: Mob):
-        if _mob.uid not in self.participants_uids:
-            self.participants_uids.add(_mob.uid)
-            self.participants.append(_mob)
-            self.mobs.append(_mob)
-
-    def __add_player_to_combat(self, _player: Player):
-        if _player.uid not in self.participants_uids:
-            self.participants_uids.add(_player.uid)
-            self.participants.append(_player)
-            self.players.append(_player)
-
-    def add_to_combat(self, _participants: list[Entity] | Entity):
-        if isinstance(_participants, Entity):
-            if isinstance(_participants, Player):
-                self.__add_player_to_combat(_participants)
-            if isinstance(_participants, Mob):
-                self.__add_mob_to_combat(_participants)
-
-        if isinstance(_participants, list):
-            for entity in _participants:
-                if isinstance(entity, Player):
-                    self.__add_player_to_combat(entity)
-                if isinstance(entity, Mob):
-                    self.__add_mob_to_combat(entity)
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        ret = ""
-        for player in self.players:
-            ret += f"P{str(player.uid)[:4]} "
-        for mob in self.mobs:
-            ret += f"M{str(mob.uid)[:4]} "
-        return ret
-
-    def combine(self, other: Combat) -> Combat | None:
-        combat_to_delete = None
-        if self.room.uid == other.room.uid:
-            if len(self.participants_uids.intersection(other.participants_uids)) != 0:
-                destroy = None
-                keep = None
-                if self.uid > other.uid:
-                    combat_to_delete = other
-                    keep = self
-                    destroy = other
-                if self.uid < other.uid:
-                    combat_to_delete = self
-                    keep = other
-                    destroy = self
-
-                assert keep, "combining with same entity?"
-                assert destroy, "combining with same entity?"
-                keep.add_to_combat(destroy.participants)
-
-        return combat_to_delete
-
-
 class Tile(typing.TypedDict):
     x: int
     y: int
@@ -1166,6 +1205,7 @@ class Tile(typing.TypedDict):
 
 
 class ActionDict(typing.TypedDict):
+    name: str
     caster: int
     target: int
     hit: bool
@@ -1177,6 +1217,7 @@ class MovementDict(typing.TypedDict):
     player: int
     direction: str
     success: bool
+    reason: str | None
 
 
 class CommandDict(typing.TypedDict):
@@ -1233,3 +1274,20 @@ class ExitData(typing.TypedDict):
     title: str
     uid: int
     can_entity_step: bool
+
+
+class RoomActionDict(typing.TypedDict):
+    type: str
+    room: BaseRoom
+    action: ActionDict
+
+
+class FleeDict(typing.TypedDict):
+    player: int
+    fled: bool
+    combat: bool
+
+
+class DeathDict(typing.TypedDict):
+    room_of_death: BaseRoom
+    deceased: Entity

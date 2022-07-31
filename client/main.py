@@ -8,10 +8,15 @@ from map import Map, RenderData
 from websocket_app import WebsocketApp
 
 from common.schemas import (
+    DEATH,
+    WIN,
     ActionResponse,
+    ActionUpdateMessage,
     ChatMessage,
+    LevelUpNotification,
     MapUpdate,
     RegistrationSuccessful,
+    RoomChangeUpdate,
 )
 from common.serialization import deserialize_server_response
 
@@ -22,6 +27,7 @@ class GameInterface(WebsocketApp):
     name: Optional[str] = None
     uid: Optional[int] = None
     initialized: bool = False
+    game_over: bool = False
 
     async def on_mount(self) -> None:
         grid = await self.view.dock_grid(edge="left", name="left")
@@ -57,13 +63,15 @@ class GameInterface(WebsocketApp):
     async def handle_messages(self):
         """Allows receiving messages from a websocket and handling them."""
         async for message in self.websocket:
+            if self.game_over:
+                continue  # No message processing for you.
+
             event = deserialize_server_response(json.loads(message))
             match event:
                 case ChatMessage():
                     self.console_widget.out.add_log(
                         f"{event.player_name}: {event.chat_message}"
                     )
-                    self.console_widget.refresh()
                 case RegistrationSuccessful():
                     self.initialized = True
                     self.name = event.player.name
@@ -89,11 +97,50 @@ class GameInterface(WebsocketApp):
                         for room in event.map
                     ]
                     self.map.render_from(tiles)
+                    self.available_commands_widget.refresh()
                 case ActionResponse():
                     self.console_widget.out.add_log(event.response)
-                    self.console_widget.refresh()
+                case ActionUpdateMessage():
+                    self.console_widget.out.add_log(event.message)
+                case RoomChangeUpdate():
+                    e_or_l = "entered" if event.enters else "left"
+                    self.console_widget.out.add_log(
+                        f"`{event.entity_name}` {e_or_l} the room!"
+                    )
+                    # TODO: display in entities in the room.
+                case LevelUpNotification():
+                    leveled = (
+                        "!"
+                        if event.times_leveled == 1
+                        else f" {event.times_leveled} times!"
+                    )
+                    message = f"You leveled up{leveled} You are now level {event.current_level}"
+                    self.console_widget.out.add_log(message)
+                case DEATH():
+                    # TODO: more properly display the death.
+                    self.initialized = False
+                    self.game_over = True
+                    self.console_widget.message = ""
+                    self.console_widget.out.console_log = [
+                        "YOU DIED.",
+                        "Press `ctrl+c` if you wish to leave this limbo.",
+                        "I know... it's a feature don't worry",
+                    ]
+                    self.console_widget.out.full_log = (
+                        self.console_widget.out.console_log
+                    )
+                case WIN():
+                    self.initialized = False
+                    self.game_over = True  # A happy kind of game over :)
+                    self.console_widget.message = ""
+                    self.console_widget.out.console_log = ["YOU WON"]
+                    self.console_widget.out.full_log = (
+                        self.console_widget.out.console_log
+                    )
                 case _:
                     raise NotImplementedError(f"Unknown event {event!r}")
+
+            self.console_widget.refresh()
 
 
 try:

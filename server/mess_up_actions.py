@@ -8,6 +8,8 @@ from game_components.game_objects import Action, Player
 K = typing.TypeVar("K")
 V = typing.TypeVar("V")
 
+NO_SHUFFLE = ["nvm", "clear", "flee"]  # It would be funny tho.
+
 
 class MessedPlayer:
     """Class for storing the messed inputs of a player.
