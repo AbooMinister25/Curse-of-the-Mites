@@ -2,6 +2,16 @@ import asyncio
 import json
 
 import websockets
+from game_components.game import Game
+from game_components.game_objects import (
+    ActionDict,
+    BaseRoom,
+    Entity,
+    FleeDict,
+    MovementDict,
+    Player,
+    RoomActionDict,
+)
 from mess_up_actions import NO_SHUFFLE, MessedPlayer
 from websockets.exceptions import InvalidMessage
 from websockets.legacy.server import WebSocketServerProtocol
@@ -25,16 +35,6 @@ from common.schemas import (
     RoomChangeUpdate,
 )
 from common.serialization import deserialize_client_request
-from game_components.game import Game
-from game_components.game_objects import (
-    ActionDict,
-    BaseRoom,
-    Entity,
-    FleeDict,
-    MovementDict,
-    Player,
-    RoomActionDict,
-)
 
 TIME_BETWEEN_ROUNDS = 6  # Seconds between each round.
 
@@ -83,7 +83,6 @@ async def register(websocket: WebSocketServerProtocol) -> None:
         ),
         map=map_update,
     )
-    print()
 
     await websocket.send(registration_response.json())
     connections[registered_player.uid] = websocket

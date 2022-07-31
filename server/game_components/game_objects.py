@@ -442,7 +442,7 @@ class Mob(Entity):
         if (self.alive) and (self.uid in self.in_room.mob_combatants):
             if len(self.in_room.player_combatants) == 0:
                 # There are no players left to fight, so stop fighting.
-                self.in_room.mob_combatants.pop(self.uid)
+                self.in_room.mob_combatants.remove(self.uid)
                 self.in_combat = False
             else:
                 res = self._act_in_combat()
