@@ -182,14 +182,44 @@ def get_no_shuffle_response(action: str) -> str:
     return message
 
 
+async def handle_room_update(update: RoomChangeUpdate, player_uids: set) -> None:
+    match player_uids:
+        case int():
+            # Send to a single player.
+            player_connection = connections.get(player_uids)
+            if player_connection is not None:
+                await player_connection.send(update.json())
+            # else: player disconnected.
+        case set():
+            # Broadcast to multiple players.
+            player_connections = {
+                connections.get(player_uid)
+                for player_uid in player_uids
+                if connections.get(player_uid) is not None
+            }
+            websockets.broadcast(player_connections, update.json())
+
+
 async def handle_movement(req: MovementRequest, ws: WebSocketServerProtocol):
     direction = messed_players[req.player].directions[req.direction]
-    # game.get_player(req.player).add_command_to_queue(direction)
-
-    # response = ActionResponse(type="action_response", response="Added move to queue.")
-
-    # await ws.send(response.json())
     result = game.get_player(req.player).move(direction)
+
+    if result["success"]:
+        from_update = result["move"]["from"]
+
+        room = game.get_room(from_update.room_uid)
+        player_uids = get_room_update_uids(room, from_update.entity_uid)
+        update = from_update
+
+        await handle_room_update(update, player_uids)
+
+        to_update = result["move"]["to"]
+
+        room = game.get_room(to_update.room_uid)
+        player_uids = get_room_update_uids(room, to_update.entity_uid)
+        update = from_update
+
+        await handle_room_update(update, player_uids)
 
     map_rs = result["map_update"]
     update = MovementUpdateMessage(

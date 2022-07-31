@@ -538,23 +538,25 @@ class Player(Entity):
         result = None
         if direction in valid_directions:
             reason = None
-            valid_move = False
             map_rs = None
+
+            move = None
 
             if self.in_combat:
                 reason = "combat"
             else:
-                valid_move = self.game.move_player(self, direction)
-                if valid_move:
+                move = self.game.move_player(self, direction)
+                if move["moved"]:
                     map_rooms = [room.export() for room in self.game.rooms.values()]
                     map_rs = MapUpdate(type="map_update", map=map_rooms)
 
             result = {
                 "player": self.uid,
                 "direction": direction,
-                "success": valid_move,
+                "success": move["moved"],
                 "reason": reason,
                 "map_update": map_rs,
+                "move": move,
             }
 
         return result
@@ -965,7 +967,7 @@ class BaseRoom(ABC):
     def get_mobs(self) -> list[Mob]:
         return self.__mobs
 
-    def add_player(self, player: Player):
+    def add_player(self, player: Player) -> RoomChangeUpdate:
         """
         Add player to room
 
@@ -975,29 +977,31 @@ class BaseRoom(ABC):
         player.in_room = self
         self.__players.append(player)
 
-        self.events.append(
-            RoomChangeUpdate(
-                type="room_change",
-                room_uid=self.uid,
-                entity_uid=player.uid,
-                entity_name=player.name,
-                enters=True,
-            )
+        update = RoomChangeUpdate(
+            type="room_change",
+            room_uid=self.uid,
+            entity_uid=player.uid,
+            entity_name=player.name,
+            enters=True,
         )
+
+        # self.events.append(update)
+        return update
 
     def remove_player(self, player: Player):
         player.in_room = None
         self.__players.remove(player)
 
-        self.events.append(
-            RoomChangeUpdate(
-                type="room_change",
-                room_uid=self.uid,
-                entity_uid=player.uid,
-                entity_name=player.name,
-                enters=False,
-            )
+        update = RoomChangeUpdate(
+            type="room_change",
+            room_uid=self.uid,
+            entity_uid=player.uid,
+            entity_name=player.name,
+            enters=False,
         )
+
+        # self.events.append(update)
+        return update
 
     def add_mob(self, _mob: Mob):
         """
@@ -1250,12 +1254,19 @@ class ActionDict(typing.TypedDict):
     cast: bool
 
 
+class MoveDict(typing.TypedDict):
+    moved: bool
+    from_: RoomChangeUpdate
+    to: RoomChangeUpdate
+
+
 class MovementDict(typing.TypedDict):
     player: int
     direction: str
     success: bool
     reason: str | None
     map_update: MapUpdate | None
+    move: MoveDict
 
 
 class CommandDict(typing.TypedDict):

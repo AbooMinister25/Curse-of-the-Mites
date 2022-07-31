@@ -178,21 +178,24 @@ class Game:
         room.add_player(player)
         return True
 
-    def move_player(self, player: Player, direction: str) -> bool:
+    def move_player(self, player: Player, direction: str) -> dict:
         if direction not in ("north", "east", "west", "south"):
-            return False
+            return {"moved": False, "from": None, "to": None}
 
         player_moved = False
 
         from_room = player.in_room
         to_go = from_room.get_links()[direction]
 
+        from_ = None
+        to = None
+
         if to_go is not None and to_go.can_entity_step:
-            from_room.remove_player(player)
-            to_go.add_player(player)
+            from_ = from_room.remove_player(player)
+            to = to_go.add_player(player)
             player_moved = True
 
-        return player_moved
+        return {"moved": player_moved, "from": from_, "to": to}
 
     def add_mob(self, mob: Mob, target_x: int, target_y: int) -> bool:
         room = self.get_room_at(target_x, target_y)
