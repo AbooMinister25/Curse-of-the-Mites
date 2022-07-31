@@ -88,7 +88,6 @@ class GameInterface(WebsocketApp):
                         RenderData(room["color"], room["x"], room["y"], room["players"])
                         for room in event.map
                     ]
-                    print("here")
                     self.map.render_from(tiles)
                 case ActionResponse():
                     self.console_widget.out.add_log(event.response)
