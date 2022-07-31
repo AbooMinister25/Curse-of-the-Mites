@@ -48,6 +48,19 @@ DEATH: list[str] = [
 ]
 
 
+def WIN(name: str) -> list[str]:
+    return [
+        "You became a beautiful butterfly and won!!!",
+        f"{name}: really, just like that?",
+        "Yup.",
+        f"{name}: just kill 5 mobs and win?",
+        "Mhmhm",
+        f"{name}: No metamorphosis? No coocoon? Nada?",
+        "Well you see... you're a very special kind of butterfly... You're a `fyyachure` butterfly",
+        "Anyways... if you want more of a challenge try killing the 5 spiders I guess.",
+    ]
+
+
 class Map(Widget):
 
     grid = Reactive(make_map_grid())
@@ -62,6 +75,12 @@ class Map(Widget):
                 Align.center("\n".join(DEATH), vertical="middle"),
                 border_style="green",
                 title="GAME OVER.",
+            )
+        if self.main_app.won:
+            return Panel(
+                Align.center("\n".join(WIN(self.main_app.name)), vertical="middle"),
+                border_style="green",
+                title="CONGRATS.",
             )
         if not self.main_app.initialized:
             return Panel(

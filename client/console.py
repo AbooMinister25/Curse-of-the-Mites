@@ -147,7 +147,7 @@ class Console(Widget):
         )
 
     async def on_key(self, event: events.Key):
-        if self.main_app.game_over:
+        if self.main_app.won or self.main_app.lost:
             return  # Sorry, no inputs for you!
 
         key = event.key

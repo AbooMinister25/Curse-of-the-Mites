@@ -66,7 +66,7 @@ class GameInterface(WebsocketApp):
     async def handle_messages(self):
         """Allows receiving messages from a websocket and handling them."""
         async for message in self.websocket:
-            if self.game_over:
+            if self.won or self.lost:
                 continue  # No message processing for you.
 
             event = deserialize_server_response(json.loads(message))
