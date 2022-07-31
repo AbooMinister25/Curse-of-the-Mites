@@ -2,16 +2,6 @@ import asyncio
 import json
 
 import websockets
-from game_components.game import Game, Mob
-from game_components.game_objects import (
-    ActionDict,
-    BaseRoom,
-    Entity,
-    FleeDict,
-    MovementDict,
-    Player,
-    RoomActionDict,
-)
 from mess_up_actions import NO_SHUFFLE, MessedPlayer
 from websockets.exceptions import InvalidMessage
 from websockets.legacy.server import WebSocketServerProtocol
@@ -34,6 +24,16 @@ from common.schemas import (
     RoomChangeUpdate,
 )
 from common.serialization import deserialize_client_request
+from game_components.game import Game
+from game_components.game_objects import (
+    ActionDict,
+    BaseRoom,
+    Entity,
+    FleeDict,
+    MovementDict,
+    Player,
+    RoomActionDict,
+)
 
 TIME_BETWEEN_ROUNDS = 6  # Seconds between each round.
 
@@ -41,18 +41,6 @@ connections: dict[
     int, WebSocketServerProtocol
 ] = {}  # Player UID as key and connection as value.
 messed_players: dict[int, MessedPlayer] = {}
-
-game = Game()
-test_ant = Mob(
-    "Test Ant", ["bite"], game
-)  # TODO: find a better place for our trusty test ant.
-game.add_mob(test_ant, 24, 16)
-
-
-test_ant2 = Mob(
-    "Test Ant2", ["bite"], game
-)  # TODO: find a better place for our trusty test ant.
-game.add_mob(test_ant2, 24, 16)
 
 
 def deserialize(message: str | bytes) -> CLIENT_REQUEST:
@@ -67,7 +55,7 @@ async def initialize_player(connection: WebSocketServerProtocol) -> Player:
         raise InvalidMessage("Expected an `init` message.")
 
     username = event.username
-    player = Player(username, ["spit", "bite", "annoy", "obliterate"], game)
+    player = Player(username, ["spit", "bite", "eat_berry", "sing"], game)
 
     game.add_player(player, 24, 16)
 
@@ -415,4 +403,5 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    game = Game()
     asyncio.run(main())
