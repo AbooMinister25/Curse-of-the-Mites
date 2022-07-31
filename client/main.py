@@ -81,6 +81,8 @@ class GameInterface(WebsocketApp):
                     self.available_commands_widget.add_commands(
                         event.player.allowed_actions
                     )
+                    self.available_commands_widget.refresh()
+
                     self.console_widget.name = self.name
                     self.console_widget.out.add_log(
                         f"Correctly registered as {self.name}"
