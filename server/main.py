@@ -27,6 +27,7 @@ from common.schemas import (
     ChatMessage,
     InitializePlayer,
     LevelUpNotification,
+    MapUpdate,
     MovementRequest,
     MovementUpdateMessage,
     PlayerSchema,
@@ -95,7 +96,12 @@ async def initialize_player(connection: WebSocketServerProtocol) -> Player:
 async def register(websocket: WebSocketServerProtocol) -> None:
     """Adds a player's connections to connections and removes them when they disconnect."""
     registered_player = await initialize_player(websocket)
+
     map_rooms = [room.export() for room in game.rooms.values()]
+    rc_update = (
+        registered_player._create_room_change_update_list()
+    )  # TODO this isn't private anymore.
+    map_update = MapUpdate(type="map_update", map=map_rooms, entities=rc_update)
 
     registration_response = RegistrationSuccessful(
         type="registration_successful",
@@ -104,8 +110,9 @@ async def register(websocket: WebSocketServerProtocol) -> None:
             name=registered_player.name,
             allowed_actions=set(registered_player.allowed_actions),
         ),
-        map=map_rooms,
+        map=map_update,
     )
+    print()
 
     await websocket.send(registration_response.json())
     connections[registered_player.uid] = websocket

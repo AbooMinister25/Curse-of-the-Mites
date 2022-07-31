@@ -89,11 +89,13 @@ class GameInterface(WebsocketApp):
 
                     tiles = [
                         RenderData(room["color"], room["x"], room["y"], room["players"])
-                        for room in event.map
+                        for room in event.map.map
                     ]
 
                     self.map.render_from(tiles)
                     self.map.refresh()
+
+                    self._handle_rc_updates(event.map.entities)
                 case MovementUpdateMessage():
                     self.console_widget.out.add_log(event.message)
 
