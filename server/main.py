@@ -56,7 +56,9 @@ async def initialize_player(connection: WebSocketServerProtocol) -> Player:
         raise InvalidMessage("Expected an `init` message.")
 
     username = event.username
-    player = Player(username, ["spit", "bite", "eat_berry", "sing"], game)
+    player = Player(
+        username, ["spit", "bite", "eat_berry", "sing", "stomp", "offer_berry"], game
+    )
 
     game.add_player(player, 15, 24)
     messed_players[player.uid] = MessedPlayer(player)

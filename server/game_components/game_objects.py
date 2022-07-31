@@ -850,6 +850,16 @@ all_actions = {
         _requires_target=True,
         _causes_combat=True,
     ),
+    "offer_berry": Action(
+        _name="offer berry",
+        _cost=10,
+        _min_damage=-10,
+        _max_damage=-20,
+        _hit_percentage=60,
+        _area_of_effect=False,
+        _requires_target=True,
+        _causes_combat=False,
+    ),
 }
 
 
