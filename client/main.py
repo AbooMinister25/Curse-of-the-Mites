@@ -98,7 +98,7 @@ class GameInterface(WebsocketApp):
                     self.console_widget.out.add_log(event.message)
 
                     map_update = event.map_update
-                    if map is not None:
+                    if map_update is not None:
                         tiles = [
                             RenderData(
                                 room["color"], room["x"], room["y"], room["players"]
