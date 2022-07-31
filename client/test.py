@@ -7,7 +7,7 @@ for i in range(30):
     grid.add_column()
 
 
-for i in range(10):
+for i in range(30):
     grid.add_row(*("▆ " for _ in range(30)))
 
 print(grid)

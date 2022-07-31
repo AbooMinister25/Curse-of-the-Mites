@@ -1,45 +1,15 @@
+from dataclasses import dataclass
+
 from rich.align import Align
 from rich.padding import Padding
 from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
 from textual.reactive import Reactive
 from textual.widget import Widget
 
-# TILES = [
-#     (0, 0, Text("▆")),
-#     (1, 0, Text("▆")),
-#     (2, 0, Text("▆")),
-#     (3, 0, Text("▆")),
-#     (4, 0, Text("▆")),
-#     (5, 0, Text("▆")),
-#     (6, 0, Text("▆")),
-#     (7, 0, Text("▆")),
-#     (8, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-#     (0, 0, Text("▆")),
-# ]
 
-
+@dataclass
 class RenderData:
     color: tuple[int, int, int]
     x: int
@@ -58,10 +28,6 @@ def make_map_grid() -> Table:
     return map_grid
 
 
-# def blocks_from_tile(tiles: list[RenderData]) -> None:
-#     blocks = []
-
-
 class Map(Widget):
     mouse_over = Reactive(False)
     grid = Reactive(make_map_grid())
@@ -77,11 +43,29 @@ class Map(Widget):
         """Renders the map using the given tiles"""
         map_grid = Table.grid()
 
-        for _ in range(50):
+        for _ in range(33):
             map_grid.add_column()
 
-        for _ in range(30):
-            ...
+        for i in range(30):
+            usable_tiles = [tile for tile in tiles if tile.y == i]
+            display: list[Text] = []
+
+            for y in range(33):
+                for tile in usable_tiles:
+                    if tile.x == y:
+                        display.append(
+                            Text(
+                                "▆ ",
+                                f"rgb({','.join((str(i) for i in tile.color))})",
+                            )
+                        )
+                        break
+                else:
+                    display.append(Text("▆ "))
+
+            map_grid.add_row(*display)
+
+        self.grid = map_grid
 
     def on_enter(self) -> None:
         self.mouse_over = True

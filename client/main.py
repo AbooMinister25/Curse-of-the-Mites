@@ -4,7 +4,7 @@ from typing import Optional
 from available_commands import AvailableCommands
 from console import Console
 from entities import Entities
-from map import Map
+from map import Map, RenderData
 from websocket_app import WebsocketApp
 
 from common.schemas import (
@@ -45,9 +45,10 @@ class GameInterface(WebsocketApp):
         self.available_commands_widget = AvailableCommands(
             main_app=self, name="Available Commands"
         )
+        self.map = Map()
 
         grid.place(
-            map_area=Map(),
+            map_area=self.map,
             entities_area=Entities(),
             events_area=self.console_widget,
             available_commands_area=self.available_commands_widget,
@@ -76,7 +77,13 @@ class GameInterface(WebsocketApp):
                     )
                     self.console_widget.refresh()
                 case MapResponse():
-                    ...
+                    tiles = [
+                        RenderData(room["color"], room["x"], room["y"])
+                        for room in event.rooms
+                    ]
+
+                    self.map.render_from(tiles)
+
                 case ActionResponse():
                     self.console_widget.out.add_log(event.response)
                     self.console_widget.refresh()

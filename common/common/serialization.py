@@ -9,6 +9,8 @@ from .schemas import (
     ActionWithTargetRequest,
     ChatMessage,
     InitializePlayer,
+    MapRequest,
+    MapResponse,
     MovementRequest,
     RegistrationSuccessful,
 )
@@ -29,6 +31,8 @@ def deserialize_client_request(event: dict[str, typing.Any]) -> CLIENT_REQUEST:
         case {"type": "move"}:
             print(event)
             return MovementRequest(**event)
+        case {"type": "init_map"}:
+            return MapRequest(**event)
         case _:
             raise NotImplementedError(f"unknown event type `{event['type']}`")
 
@@ -41,6 +45,8 @@ def deserialize_server_response(event: dict[str, typing.Any]) -> SERVER_RESPONSE
             return RegistrationSuccessful(**event)
         case {"type": "action_response"}:
             return ActionResponse(**event)
+        case {"type": "map_response"}:
+            return MapResponse(**event)
         case _:
             raise NotImplementedError(f"unknown event type `{event['type']}`")
 

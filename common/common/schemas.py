@@ -95,6 +95,7 @@ CLIENT_REQUEST = (
     | ActionNoTargetRequest
     | ActionWithTargetRequest
     | MovementRequest
+    | MapRequest
 )
-SERVER_RESPONSE = RegistrationSuccessful | ActionResponse | ChatMessage
+SERVER_RESPONSE = RegistrationSuccessful | ActionResponse | ChatMessage | MapResponse
 MESSAGE = CLIENT_REQUEST | SERVER_RESPONSE
