@@ -51,7 +51,7 @@ class GameInterface(WebsocketApp):
         self.available_commands_widget = AvailableCommands(
             main_app=self, name="Available Commands"
         )
-        self.map = Map()
+        self.map = Map(main_app=self, name="Map")
 
         grid.place(
             map_area=self.map,
@@ -96,7 +96,7 @@ class GameInterface(WebsocketApp):
                     self.console_widget.out.add_log(event.message)
 
                     map_update = event.map_update
-                    if map is not None:
+                    if map_update is not None:
                         tiles = [
                             RenderData(
                                 room["color"], room["x"], room["y"], room["players"]
