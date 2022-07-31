@@ -415,8 +415,8 @@ class Entity(ABC):
 
 class Mob(Entity):
     def update(self):
-        self.mana += 7
-        self.health += random.randint(1, 3)
+        self.mana += 4
+        self.health += random.randint(1, 2)
 
         self.enforce_aliveness()
 
@@ -482,8 +482,8 @@ class Player(Entity):
         Executes the next action in the players queue.
         Returns a list of ActionDicts if the player did something and None if they didn't
         """
-        self.mana += 10
-        self.health += random.randint(1, 5)
+        self.mana += 7
+        self.health += random.randint(1, 3)
 
         result = self.uid  # If we didn't do anything, return our UID anyways.
 
