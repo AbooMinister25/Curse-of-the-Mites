@@ -66,6 +66,13 @@ class ConsoleLog(Widget):
         )
 
     def add_log(self, log: str) -> None:
+        # TODO: find a better way of displaying time passage.
+        ANNOYING_LOG = "Time passes by, but you didn't do anything this round!"
+        if (len(log.split()) == 1) or log == ANNOYING_LOG:
+            # FEATURE: THERE'S SOME MYSTERIOUS LOG THAT I JUST CAN'T FIGURE WHERE IT COMES FROM
+            # IT'S ALWAYS THE NAME OF THE ENTITY APPARENTLY BUT I CANNOT SQUASH IT
+            # I DON'T THINK WE HAVE ANY OTHER 1-WORD MESSAGE ANYWAYS.
+            return
         self.console_log.append(log)
         self.full_log.append(log)
         self.refresh()
