@@ -7,7 +7,12 @@ from entities import Entities
 from map import Map, RenderData
 from websocket_app import WebsocketApp
 
-from common.schemas import ActionResponse, ChatMessage, RegistrationSuccessful
+from common.schemas import (
+    ActionResponse,
+    ChatMessage,
+    MapUpdate,
+    RegistrationSuccessful,
+)
 from common.serialization import deserialize_server_response
 
 
@@ -73,12 +78,18 @@ class GameInterface(WebsocketApp):
                     self.console_widget.refresh()
 
                     tiles = [
-                        RenderData(room["color"], room["x"], room["y"])
+                        RenderData(room["color"], room["x"], room["y"], room["players"])
                         for room in event.map
                     ]
 
                     self.map.render_from(tiles)
-
+                case MapUpdate():
+                    tiles = [
+                        RenderData(room["color"], room["x"], room["y"], room["players"])
+                        for room in event.map
+                    ]
+                    print("here")
+                    self.map.render_from(tiles)
                 case ActionResponse():
                     self.console_widget.out.add_log(event.response)
                     self.console_widget.refresh()

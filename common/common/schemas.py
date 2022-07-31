@@ -80,6 +80,12 @@ class ActionResponse(MessageBase[Literal["action_response"]]):
     response: str
 
 
+class MapUpdate(MessageBase[Literal["map_update"]]):
+    """Sent by the server to update the client on the details of the map"""
+
+    map: list[ExportedData]
+
+
 CLIENT_REQUEST = (
     ChatMessage
     | InitializePlayer
@@ -87,5 +93,5 @@ CLIENT_REQUEST = (
     | ActionWithTargetRequest
     | MovementRequest
 )
-SERVER_RESPONSE = RegistrationSuccessful | ActionResponse | ChatMessage
+SERVER_RESPONSE = RegistrationSuccessful | ActionResponse | ChatMessage | MapUpdate
 MESSAGE = CLIENT_REQUEST | SERVER_RESPONSE

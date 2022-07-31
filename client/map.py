@@ -14,6 +14,7 @@ class RenderData:
     color: tuple[int, int, int]
     x: int
     y: int
+    players: list
 
 
 def make_map_grid() -> Table:
@@ -53,12 +54,20 @@ class Map(Widget):
             for y in range(33):
                 for tile in usable_tiles:
                     if tile.x == y:
-                        display.append(
-                            Text(
-                                "▆ ",
-                                f"rgb({','.join((str(i) for i in tile.color))})",
+                        if tile.players:
+                            display.append(
+                                Text(
+                                    "▆ ",
+                                    "blue",
+                                )
                             )
-                        )
+                        else:
+                            display.append(
+                                Text(
+                                    "▆ ",
+                                    f"rgb({','.join((str(i) for i in tile.color))})",
+                                )
+                            )
                         break
                 else:
                     display.append(Text("▆ "))
