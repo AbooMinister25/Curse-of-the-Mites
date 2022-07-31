@@ -531,7 +531,6 @@ class Player(Entity):
                     map=map_rooms,
                     entities=rc_update,
                 )
-                print(rc_update)
         result = {
             "player": self.uid,
             "direction": command["command"],
@@ -851,7 +850,7 @@ all_actions = {
         _causes_combat=True,
     ),
     "offer_berry": Action(
-        _name="offer berry",
+        _name="offer_berry",
         _cost=10,
         _min_damage=-10,
         _max_damage=-20,
