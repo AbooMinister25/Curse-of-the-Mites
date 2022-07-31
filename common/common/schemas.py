@@ -90,6 +90,13 @@ class RoomInformationMessage(MessageBase[Literal["room_info"]]):
     entities: list[RoomChangeUpdate]
 
 
+class DEATH(MessageBase[Literal["DEATH"]]):
+    """Too bad! You died.
+
+    Sent to the player when they get an ice cream :P
+    """
+
+
 CLIENT_REQUEST = (
     ChatMessage
     | InitializePlayer
@@ -103,5 +110,6 @@ SERVER_RESPONSE = (
     | ChatMessage
     | ActionUpdateMessage
     | RoomChangeUpdate
+    | DEATH
 )
 MESSAGE = CLIENT_REQUEST | SERVER_RESPONSE

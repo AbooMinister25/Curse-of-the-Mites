@@ -226,17 +226,42 @@ class Game:
                 []
             )  # If an event was missed for whatever reason... to bad... it's a feature!
 
-    def clean_the_dead(self):
+    def clean_the_dead(self) -> list[int]:
         ## First the mobs.
         mobs_to_pop = []
         for mob_uid in self.mobs:
             mob = self.mobs[mob_uid]
+
             if not mob.alive:
                 room = mob.in_room
+
+                if mob_uid in room.mob_combatants:
+                    room.mob_combatants.remove(mob_uid)
+
                 room.remove_mob(mob)
                 mobs_to_pop.append(mob_uid)
+
         for mob_uid in mobs_to_pop:
             self.mobs.pop(mob_uid)
+
+        ## Then the players.
+        players_to_pop = []
+        for player_uid in self.players:
+            player = self.players[player_uid]
+
+            if not player.alive:
+                room = player.in_room
+
+                if player_uid in room.player_combatants:
+                    room.player_combatants.remove(player_uid)
+
+                room.remove_player(player)
+                players_to_pop.append(player_uid)
+
+        for player_uid in players_to_pop:
+            self.players.pop(player_uid)
+
+        return players_to_pop  # Their connections will need to be deleted.
 
 
 if __name__ == "__main__":

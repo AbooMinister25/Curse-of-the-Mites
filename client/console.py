@@ -133,6 +133,9 @@ class Console(Widget):
         )
 
     async def on_key(self, event: events.Key):
+        if self.main_app.is_dead:
+            return  # Sorry, no inputs for you!
+
         key = event.key
         match key:
             case "enter":

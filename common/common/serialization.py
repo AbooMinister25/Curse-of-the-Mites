@@ -3,6 +3,7 @@ import typing
 
 from .schemas import (
     CLIENT_REQUEST,
+    DEATH,
     SERVER_RESPONSE,
     ActionNoTargetRequest,
     ActionResponse,
@@ -46,6 +47,8 @@ def deserialize_server_response(event: dict[str, typing.Any]) -> SERVER_RESPONSE
             return ActionUpdateMessage(**event)
         case {"type": "room_change"}:
             return RoomChangeUpdate(**event)
+        case {"type": "DEATH"}:
+            return DEATH(**event)
         case _:
             raise NotImplementedError(f"unknown event type `{event['type']}`")
 

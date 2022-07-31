@@ -8,6 +8,7 @@ from map import Map
 from websocket_app import WebsocketApp
 
 from common.schemas import (
+    DEATH,
     ActionResponse,
     ActionUpdateMessage,
     ChatMessage,
@@ -23,6 +24,7 @@ class GameInterface(WebsocketApp):
     name: Optional[str] = None
     uid: Optional[int] = None
     initialized: bool = False
+    is_dead: bool = False
 
     async def on_mount(self) -> None:
         grid = await self.view.dock_grid(edge="left", name="left")
@@ -90,6 +92,19 @@ class GameInterface(WebsocketApp):
                     )
                     # TODO: display in entities in the room.
                     self.console_widget.refresh()
+                case DEATH():
+                    # TODO: more properly display the death.
+                    self.initialized = False
+                    self.is_dead = True
+                    self.console_widget.message = ""
+                    self.console_widget.out.console_log = [
+                        "YOU DIED.",
+                        "Press `ctrl+c` if you wish to leave this limbo.",
+                        "I know... it's a feature don't worry",
+                    ]
+                    self.console_widget.out.full_log = (
+                        self.console_widget.out.console_log
+                    )
                 case _:
                     raise NotImplementedError(f"Unknown event {event!r}")
 

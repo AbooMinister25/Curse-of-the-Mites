@@ -18,6 +18,7 @@ from websockets.legacy.server import WebSocketServerProtocol
 
 from common.schemas import (
     CLIENT_REQUEST,
+    DEATH,
     ActionNoTargetRequest,
     ActionResponse,
     ActionUpdateMessage,
@@ -190,7 +191,10 @@ async def game_loop():
 
         await send_updates(game.out_queue)
 
-        game.clean_the_dead()
+        players_to_clean = game.clean_the_dead()
+
+        for player_uid in players_to_clean:
+            connections.pop(player_uid)
 
 
 async def send_updates(out_queue: asyncio.Queue):
@@ -242,7 +246,7 @@ async def send_updates(out_queue: asyncio.Queue):
                     message="Time passes by, but you didn't do anything this round!",
                 )
             case {"room_of_death": room, "deceased": deceased}:
-                player_uids = get_death_update_uids(room, deceased)
+                player_uids = await get_death_update_uids(room, deceased)
                 update = ActionUpdateMessage(
                     type="update", message=f"`{deceased.name}` died!"
                 )
@@ -324,13 +328,28 @@ def get_room_update_uids(room: BaseRoom, caster_uid: int) -> set:
     return uids
 
 
-def get_death_update_uids(room: BaseRoom, deceased: Entity) -> set:
+async def get_death_update_uids(room: BaseRoom, deceased: Entity) -> set:
     if isinstance(deceased, Player):
+        # We must handle the deceased with a bit more care.
+        await handle_dead_player_with_care(deceased.uid)
         # If a player died then tell the entire server!
-        return set(connections.keys())
+        return {
+            player_uid
+            for player_uid in connections.keys()
+            if player_uid != deceased.uid
+        }
     else:
         # If a mob died, only tell the players in the room.
         return {player.uid for player in room.get_players()}
+
+
+async def handle_dead_player_with_care(player_uid: int):
+    """Properly notifies the client of it's death."""
+    tactful_message = DEATH(type="DEATH")
+    deceased_connection = connections.get(player_uid)
+
+    if deceased_connection is not None:
+        await deceased_connection.send(tactful_message.json())
 
 
 def get_room_update_message(room_action: RoomActionDict) -> str:
