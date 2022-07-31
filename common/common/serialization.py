@@ -11,6 +11,7 @@ from .schemas import (
     ActionWithTargetRequest,
     ChatMessage,
     InitializePlayer,
+    LevelUpNotification,
     MovementRequest,
     RegistrationSuccessful,
     RoomChangeUpdate,
@@ -49,6 +50,8 @@ def deserialize_server_response(event: dict[str, typing.Any]) -> SERVER_RESPONSE
             return RoomChangeUpdate(**event)
         case {"type": "DEATH"}:
             return DEATH(**event)
+        case {"type": "level_up"}:
+            return LevelUpNotification(**event)
         case _:
             raise NotImplementedError(f"unknown event type `{event['type']}`")
 

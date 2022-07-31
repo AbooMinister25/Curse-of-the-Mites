@@ -25,6 +25,7 @@ from common.schemas import (
     ActionWithTargetRequest,
     ChatMessage,
     InitializePlayer,
+    LevelUpNotification,
     MovementRequest,
     PlayerSchema,
     RegistrationSuccessful,
@@ -208,6 +209,9 @@ async def send_updates(out_queue: asyncio.Queue):
                 room = game.get_room(action.room_uid)
                 player_uids = get_room_update_uids(room, action.entity_uid)
                 update = action
+            case {"type": (LevelUpNotification() as notif), "uid": uid}:
+                player_uids = uid
+                update = notif
             case {"caster": uid}:
                 player_uids = uid
                 update = ActionUpdateMessage(

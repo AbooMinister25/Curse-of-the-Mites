@@ -376,7 +376,7 @@ class Entity(ABC):
         if self.health > self.max_health:
             self.health = self.max_health
 
-        self.alive = self.health > 0
+        self.enforce_aliveness()
 
         self._send_updates_to_the_room(actions)
         pass
@@ -401,11 +401,23 @@ class Entity(ABC):
                 {"room_of_death": self.in_room, "deceased": self}
             )
 
+    def enforce_aliveness(self) -> None:
+        self.alive = self.health > 0
+
 
 class Mob(Entity):
     def update(self):
         self.mana += 7
         self.health += random.randint(1, 3)
+
+        self.enforce_aliveness()
+
+        if not self.alive:
+            # Level up every player that was part of the combat (even if maybe they didn't do much).
+            for player_uid in self.in_room.player_combatants:
+                player = self.game.get_player(player_uid)
+                if player is not None:
+                    player.level_up()
 
         actions = self._handle_combat()
         super().update(actions=actions)
@@ -418,8 +430,8 @@ class Mob(Entity):
     def _handle_combat(self) -> list[ActionDict] | None:
         """Allows the mob to act if it is in combat."""
         res = None
-        # Poor mob doesn't realise it died yet otherwise.
-        if (self.health > 0) and (self.uid in self.in_room.mob_combatants):
+
+        if (self.alive) and (self.uid in self.in_room.mob_combatants):
             if len(self.in_room.player_combatants) == 0:
                 # There are no players left to fight, so stop fighting.
                 self.in_room.mob_combatants.pop(self.uid)
@@ -444,11 +456,14 @@ class Mob(Entity):
 
 class Player(Entity):
     level: int
+    level_past_tick: int
     command_queue: list[dict[str, Entity | None]]
 
     def __init__(self, _name: str, _allowed_actions: list[str], game: Game):
         super().__init__(_name, _allowed_actions)
+        self.level_past_tick = 0
         self.level = 0
+        self.won = False
         self.command_queue = []
         self.game = game
 
@@ -497,7 +512,6 @@ class Player(Entity):
             }
         elif command["command"] == "flee":
             result = self._try_fleeing()
-            pass  # TODO: IMPLEMENT FLEEING.
         else:
             result = self.commit_action(command["command"], command["target"])
 
@@ -536,6 +550,12 @@ class Player(Entity):
             self.in_room.player_combatants.remove(self.uid)
 
         return {"player": self.uid, "fled": success, "combat": was_in_combat}
+
+    def level_up(self):
+        self.level += 1
+
+        if self.level >= 5:
+            self.won = True
 
     def add_command_to_queue(
         self, _command: str, _target: Entity | None = None
@@ -911,7 +931,7 @@ class BaseRoom(ABC):
         player.in_room = self
         self.__players.append(player)
 
-        self.events.append(  # TODO
+        self.events.append(
             RoomChangeUpdate(
                 type="room_change",
                 room_uid=self.uid,
@@ -925,7 +945,7 @@ class BaseRoom(ABC):
         player.in_room = None
         self.__players.remove(player)
 
-        self.events.append(  # TODO
+        self.events.append(
             RoomChangeUpdate(
                 type="room_change",
                 room_uid=self.uid,

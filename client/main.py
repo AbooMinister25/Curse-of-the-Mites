@@ -12,6 +12,7 @@ from common.schemas import (
     ActionResponse,
     ActionUpdateMessage,
     ChatMessage,
+    LevelUpNotification,
     RegistrationSuccessful,
     RoomChangeUpdate,
 )
@@ -65,7 +66,6 @@ class GameInterface(WebsocketApp):
                     self.console_widget.out.add_log(
                         f"{event.player_name}: {event.chat_message}"
                     )
-                    self.console_widget.refresh()
                 case RegistrationSuccessful():
                     self.initialized = True
                     self.name = event.player.name
@@ -78,20 +78,24 @@ class GameInterface(WebsocketApp):
                         f"Correctly registered as {self.name}"
                     )
                     self.available_commands_widget.refresh()
-                    self.console_widget.refresh()
                 case ActionResponse():
                     self.console_widget.out.add_log(event.response)
-                    self.console_widget.refresh()
                 case ActionUpdateMessage():
                     self.console_widget.out.add_log(event.message)
-                    self.console_widget.refresh()
                 case RoomChangeUpdate():
                     e_or_l = "entered" if event.enters else "left"
                     self.console_widget.out.add_log(
                         f"`{event.entity_name}` {e_or_l} the room!"
                     )
                     # TODO: display in entities in the room.
-                    self.console_widget.refresh()
+                case LevelUpNotification():
+                    leveled = (
+                        "!"
+                        if event.times_leveled == 1
+                        else f" {event.times_leveled} times!"
+                    )
+                    message = f"You leveled up{leveled} You are now level {event.current_level}"
+                    self.console_widget.out.add_log(message)
                 case DEATH():
                     # TODO: more properly display the death.
                     self.initialized = False
@@ -107,6 +111,8 @@ class GameInterface(WebsocketApp):
                     )
                 case _:
                     raise NotImplementedError(f"Unknown event {event!r}")
+
+            self.console_widget.refresh()
 
 
 try:
