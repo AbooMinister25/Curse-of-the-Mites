@@ -95,7 +95,7 @@ class GameInterface(WebsocketApp):
                     self.map.render_from(tiles)
                     self.map.refresh()
 
-                    self._handle_rc_updates(event.map.entities)
+                    self._handle_room_change(event.map.entities)
                 case MovementUpdateMessage():
                     self.console_widget.out.add_log(event.message)
 
@@ -110,7 +110,7 @@ class GameInterface(WebsocketApp):
                         self.console_widget.out.add_log(
                             map_update.entities[-1].entity_name
                         )
-                        self._handle_rc_updates(map_update.entities)
+                        self._handle_room_change(map_update.entities)
 
                         self.map.render_from(tiles)
                         self.map.refresh()
@@ -162,6 +162,13 @@ class GameInterface(WebsocketApp):
                     raise NotImplementedError(f"Unknown event {event!r}")
 
             self.console_widget.refresh()
+
+    def _handle_room_change(self, rc_updates: list[RoomChangeUpdate]) -> None:
+        self.entities.entities = (
+            {}
+        )  # All the mobs from the room we left aren't here anymore.
+
+        self._handle_rc_updates(rc_updates)
 
     def _handle_rc_updates(self, rc_updates: list[RoomChangeUpdate]) -> None:
         for rc in rc_updates:
