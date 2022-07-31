@@ -1,3 +1,4 @@
+import random
 import time
 from asyncio import Queue
 
@@ -44,7 +45,6 @@ else:
         raw_map,
     )
 
-
 ROOMS_MAP = {
     "rs": RoughSide,
     "wall": Wall,
@@ -86,6 +86,7 @@ class Game:
         self.mobs = {}
         self.rooms = {}
         self.build_map()
+        self.spawn_mobs()
         self.start_time = round(time.time() * 1000)
 
     def get_room_at(self, x: int, y: int) -> BaseRoom | None:
@@ -104,6 +105,36 @@ class Game:
 
     def get_mob(self, _uid: int) -> Mob | None:
         return self.mobs.get(_uid)
+
+    def spawn_mobs(self) -> None:
+
+        for room in self.rooms.values():
+            if room.get_map_location() == (15, 24):
+                # this is spawn location for player. Dont add a mob here
+                continue
+            if room.get_map_location() == (15, 23):
+                # this is one north of spawn. This lets a player see a mob right away
+                # but its WEAK. This lets a player learn the game in a safe environment
+                # this acts as a tutorial without being EA handhold-y
+                m = Mob("Mite", ["annoy"], self)
+                # print(f"Adding mite at {room.get_map_location()}")
+                room.add_mob(m)
+                continue
+            if isinstance(room, Wall):
+                continue
+            if isinstance(room, SpidersDen):
+                # Sting will be difficult, the also dont have annoy, so they are going to hit hard
+                m = Mob("Spider", ["sting", "eat_berry", "nibble"], self)
+                # print(f"Adding spider at {room.get_map_location()}")
+                room.add_mob(m)
+                continue
+            chance_to_spawn = random.randint(0, 100)
+
+            # if there are too many mobs, make this magic number lower
+            if chance_to_spawn < 25:
+                m = Mob("Mite", ["nibble", "eat_berry", "stomp", "annoy"], self)
+                # print(f"Adding mite at {room.get_map_location()}")
+                room.add_mob(m)
 
     def build_map(self) -> None:
         largest_x = 0

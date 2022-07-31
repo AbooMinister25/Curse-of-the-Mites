@@ -409,9 +409,8 @@ class Entity(ABC):
                 )
 
     def enforce_aliveness(self) -> None:
-        self.alive = (
-            self.health > 0 and self.alive
-        )  # Makes sure a winning player doesn't "revive" when we are trying to clean it.
+        # Makes sure a winning player doesn't "revive" when we are trying to clean it.
+        self.alive = self.health > 0 and self.alive
 
 
 class Mob(Entity):
@@ -451,6 +450,7 @@ class Mob(Entity):
         return res
 
     def _act_in_combat(self) -> list[ActionDict]:
+        # TODO MOBS CHOSE ACTIONS BASED ON AVAILABLE MANA
         action_choice = random.choice(list(self.allowed_actions.values()))
         if action_choice.requires_target:
             target_choice = random.choice(list(self.in_room.player_combatants))
@@ -816,13 +816,40 @@ all_actions = {
         _requires_target=True,
         _causes_combat=True,
     ),
+    "nibble": Action(
+        _name="nibble",
+        _cost=0,
+        _min_damage=5,
+        _max_damage=5,
+        _hit_percentage=100,
+        _area_of_effect=False,
+        _requires_target=True,
+        _causes_combat=True,
+    ),
     "stomp": Action("stomp", 15, 5, 15, 70, False, True, True),
     "spit": Action("spit", 25, 15, 50, 30, True, False, True),
     "eat_berry": Action("eat", 5, -5, -10, 100, False, False, False),
     "annoy": Action("annoy", 0, 1, 1, 100, True, False, True),
-    "obliterate": Action(
-        "obliterate", 0, 1000, 10001, 100, True, False, True
-    ),  # Just for testing :p
+    "sing": Action(
+        _name="sing",
+        _cost=10,
+        _min_damage=-2,
+        _max_damage=-15,
+        _hit_percentage=100,
+        _area_of_effect=False,
+        _requires_target=True,
+        _causes_combat=False,
+    ),
+    "sting": Action(
+        _name="sting",
+        _cost=25,
+        _min_damage=20,
+        _max_damage=70,
+        _hit_percentage=35,
+        _area_of_effect=False,
+        _requires_target=True,
+        _causes_combat=True,
+    ),
 }
 
 
