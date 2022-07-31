@@ -34,7 +34,7 @@ def make_map_grid() -> Table:
 
 
 class Map(Widget):
-    mouse_over = Reactive(False)
+
     grid = Reactive(make_map_grid())
 
     def __init__(self, main_app: "GameInterface", name: str | None = None):
@@ -44,7 +44,7 @@ class Map(Widget):
     def render(self) -> Panel:
         return Panel(
             Padding(Align.center(self.grid, vertical="middle")),
-            border_style="green" if self.mouse_over else "blue",
+            border_style="green",
             title="Map",
         )
 
@@ -86,9 +86,3 @@ class Map(Widget):
             map_grid.add_row(*display)
 
         self.grid = map_grid
-
-    def on_enter(self) -> None:
-        self.mouse_over = True
-
-    def on_leave(self) -> None:
-        self.mouse_over = False

@@ -15,8 +15,10 @@ if typing.TYPE_CHECKING:
 class AvailableCommands(Widget):
     """Shows the available commands the player can make"""
 
-    mouse_over = Reactive(False)
-    MOVE_COMMANDS_MESSAGE: list[str] = ["!move", "(north | south | east | west)"]
+    MOVE_COMMANDS_MESSAGE: list[str] = [
+        "!move (or use numpad keys)",
+        "(north | south | east | west)",
+    ]
     SPECIAL_COMMANDS: list[str] = ["!flee", "!nvm", "!clear"]
     available_commands: Reactive[list[str]] = Reactive(
         MOVE_COMMANDS_MESSAGE + SPECIAL_COMMANDS + []
@@ -27,18 +29,18 @@ class AvailableCommands(Widget):
         super().__init__(name)
 
     def render(self) -> Panel:
+        if not self.main_app.initialized:
+            return Panel(
+                Padding(Align.left("/register [USERNAME]")),
+                border_style="green",
+                title="Register to play!",
+            )
         return Panel(
             Padding(Align.left("\n".join(self.available_commands))),
-            border_style="green" if self.mouse_over else "blue",
+            border_style="green",
             title="Allowed Moves",
         )
 
     def add_commands(self, commands: set[str]) -> None:
         """Adds the given commands to our list of available commands"""
         self.available_commands.extend(commands)
-
-    def on_enter(self) -> None:
-        self.mouse_over = True
-
-    def on_leave(self) -> None:
-        self.mouse_over = False
