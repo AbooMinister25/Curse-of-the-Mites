@@ -152,7 +152,7 @@ async def handle_action_without_target(
 
     response = None
     if req.action in NO_SHUFFLE:
-        game.get_player(req.player).add_command_to_queue(action.name)
+        game.get_player(req.player).add_command_to_queue(req.action)
         response = ActionResponse(
             type="action_response", response=get_no_shuffle_response(req.action)
         )
