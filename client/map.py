@@ -33,6 +33,34 @@ def make_map_grid() -> Table:
     return map_grid
 
 
+STORY: list[str] = [
+    "CURSE OF THE MITES",
+    "This forest is plagued by Confusing Bugs!",
+    "A pesky species of mites that infects other bugs and scrambles their brains...",
+    "Your only hope as a caterpillar is to grow into a butterfly and escape the forest!",
+    "(just kill a bunch of stuff and you'll be fine)",
+]
+
+DEATH: list[str] = [
+    "YOU DIED.",
+    "Press `ctrl+c` if you wish to leave this limbo.",
+    "I know... it's a feature don't worry",
+]
+
+
+def WIN(name: str) -> list[str]:
+    return [
+        "`You became a beautiful butterfly and won!!!`",
+        f"{name}: really, just like that?",
+        "`Yup`.",
+        f"{name}: just kill 5 mobs and win?",
+        "`Mhmhm`",
+        f"{name}: No metamorphosis? No coocoon? Nada?",
+        "Well you see... you're a very special kind of butterfly... You're a `fyyachure` butterfly ;)",
+        "Anyways... if you want more of a challenge try killing the 5 spiders I guess.",
+    ]
+
+
 class Map(Widget):
 
     grid = Reactive(make_map_grid())
@@ -42,6 +70,24 @@ class Map(Widget):
         super().__init__(name)
 
     def render(self) -> Panel:
+        if self.main_app.lost:
+            return Panel(
+                Align.center("\n".join(DEATH), vertical="middle"),
+                border_style="green",
+                title="GAME OVER.",
+            )
+        if self.main_app.won:
+            return Panel(
+                Align.center("\n".join(WIN(self.main_app.name)), vertical="middle"),
+                border_style="green",
+                title="CONGRATS.",
+            )
+        if not self.main_app.initialized:
+            return Panel(
+                Align.center("\n".join(STORY), vertical="middle"),
+                border_style="green",
+                title="The Story.",
+            )
         return Panel(
             Padding(Align.center(self.grid, vertical="middle")),
             border_style="green",
