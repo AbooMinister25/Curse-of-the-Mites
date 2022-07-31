@@ -161,6 +161,11 @@ class Console(Widget):
                 self.message = ""
             case self.DELETE_KEY:
                 self.message = self.message[:-1]
+            case ("2" | "4" | "6" | "8") if self.message == "":
+                # We check that the message = 0 because maybe the player is trying to actually write a number.
+                result = await self.handle_keybind_movement(key)
+                if result:
+                    self.out.add_log(result)
             case "up":
                 (
                     self.out.scroll_towards_old()
@@ -279,6 +284,12 @@ class Console(Widget):
         )
         await self.main_app.websocket.send(message.json())
         return ""
+
+    @enforce_initialization
+    async def handle_keybind_movement(self, keybind_dir: str) -> str:
+        KEYBINDS = {"2": "south", "4": "west", "6": "east", "8": "north"}
+        self.out.add_log(keybind_dir)
+        return await self.handle_movement(KEYBINDS[keybind_dir])
 
     def get_target(self, target_name: str) -> int | None:
         """Gets a target name and then returns the target's UID.
