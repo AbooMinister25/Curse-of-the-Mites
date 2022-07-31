@@ -14,7 +14,7 @@ from common.schemas import (
     ActionUpdateMessage,
     ChatMessage,
     LevelUpNotification,
-    MapUpdate,
+    MovementUpdateMessage,
     RegistrationSuccessful,
     RoomChangeUpdate,
 )
@@ -91,12 +91,20 @@ class GameInterface(WebsocketApp):
                     ]
 
                     self.map.render_from(tiles)
-                case MapUpdate():
-                    tiles = [
-                        RenderData(room["color"], room["x"], room["y"], room["players"])
-                        for room in event.map
-                    ]
-                    self.map.render_from(tiles)
+                    self.map.refresh()
+                case MovementUpdateMessage():
+                    self.console_widget.out.add_log(event.message)
+
+                    map_update = event.map_update
+                    if map is not None:
+                        tiles = [
+                            RenderData(
+                                room["color"], room["x"], room["y"], room["players"]
+                            )
+                            for room in map_update.map
+                        ]
+                        self.map.render_from(tiles)
+                        self.map.refresh()
                     self.available_commands_widget.refresh()
                 case ActionResponse():
                     self.console_widget.out.add_log(event.response)

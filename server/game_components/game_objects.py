@@ -6,7 +6,7 @@ import time
 import typing
 from abc import ABC, abstractmethod  # abstract classes
 
-from common.schemas import RoomChangeUpdate
+from common.schemas import MapUpdate, RoomChangeUpdate
 
 if typing.TYPE_CHECKING:
     from game import Game
@@ -505,15 +505,20 @@ class Player(Entity):
         if command["command"] in movement_commands:
             reason = None
             valid_move = False
+            map_rs = None
             if self.in_combat:
                 reason = "combat"
             else:
                 valid_move = self.game.move_player(self, command["command"])
+                if valid_move:
+                    map_rooms = [room.export() for room in self.game.rooms.values()]
+                    map_rs = MapUpdate(type="map_update", map=map_rooms)
             result = {
                 "player": self.uid,
                 "direction": command["command"],
                 "success": valid_move,
                 "reason": reason,
+                "map_update": map_rs,
             }
         elif command["command"] == "flee":
             result = self._try_fleeing()
@@ -1218,6 +1223,7 @@ class MovementDict(typing.TypedDict):
     direction: str
     success: bool
     reason: str | None
+    map_update: MapUpdate | None
 
 
 class CommandDict(typing.TypedDict):

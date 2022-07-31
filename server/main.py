@@ -27,8 +27,8 @@ from common.schemas import (
     ChatMessage,
     InitializePlayer,
     LevelUpNotification,
-    MapUpdate,
     MovementRequest,
+    MovementUpdateMessage,
     PlayerSchema,
     RegistrationSuccessful,
     RoomChangeUpdate,
@@ -201,11 +201,11 @@ async def handle_movement(req: MovementRequest, ws: WebSocketServerProtocol):
     response = ActionResponse(type="action_response", response="Added move to queue.")
 
     await ws.send(response.json())
-
-    map_rooms = [room.export() for room in game.rooms.values()]
+    """    map_rooms = [room.export() for room in game.rooms.values()]
     map_rs = MapUpdate(type="map_update", map=map_rooms)
 
     await ws.send(map_rs.json())
+    """
 
 
 async def websocket_handling() -> None:
@@ -255,10 +255,13 @@ async def send_updates(out_queue: asyncio.Queue):
                     type="update", message=get_action_update_message(action)
                 )
             case {"player": uid, "direction": _}:
+                # TODO
                 player_uids = uid
-                update = ActionUpdateMessage(
-                    type="update",
+                map_rs = action["map_update"]
+                update = MovementUpdateMessage(
+                    type="movement_update",
                     message=get_movement_message(action),
+                    map_update=map_rs,
                 )
             case {"player": uid, "fled": _}:
                 player_uids = uid
