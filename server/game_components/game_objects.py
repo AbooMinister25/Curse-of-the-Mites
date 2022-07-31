@@ -527,6 +527,7 @@ class Player(Entity):
                     map=map_rooms,
                     entities=rc_update,
                 )
+                print(rc_update)
         result = {
             "player": self.uid,
             "direction": command["command"],
