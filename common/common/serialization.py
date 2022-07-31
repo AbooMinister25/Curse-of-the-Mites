@@ -3,13 +3,16 @@ import typing
 
 from .schemas import (
     CLIENT_REQUEST,
+    DEATH,
     SERVER_RESPONSE,
+    WIN,
     ActionNoTargetRequest,
     ActionResponse,
     ActionUpdateMessage,
     ActionWithTargetRequest,
     ChatMessage,
     InitializePlayer,
+    LevelUpNotification,
     MovementRequest,
     RegistrationSuccessful,
     RoomChangeUpdate,
@@ -46,6 +49,12 @@ def deserialize_server_response(event: dict[str, typing.Any]) -> SERVER_RESPONSE
             return ActionUpdateMessage(**event)
         case {"type": "room_change"}:
             return RoomChangeUpdate(**event)
+        case {"type": "DEATH"}:
+            return DEATH(**event)
+        case {"type": "WIN"}:
+            return WIN(**event)
+        case {"type": "level_up"}:
+            return LevelUpNotification(**event)
         case _:
             raise NotImplementedError(f"unknown event type `{event['type']}`")
 

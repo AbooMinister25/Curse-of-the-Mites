@@ -1,12 +1,13 @@
 import time
 from asyncio import Queue
 
-from common.schemas import RoomChangeUpdate
+from common.schemas import WIN, LevelUpNotification, RoomChangeUpdate
 
 if __name__ == "__main__":
     from game_objects import (
         ActionDict,
         BaseRoom,
+        DeathDict,
         FleeDict,
         LeftLower,
         LeftTop,
@@ -26,6 +27,7 @@ else:
     from game_components.game_objects import (
         ActionDict,
         BaseRoom,
+        DeathDict,
         FleeDict,
         LeftLower,
         LeftTop,
@@ -43,6 +45,19 @@ else:
     )
 
 
+OUT_QUEUE = (
+    ActionDict
+    | DeathDict
+    | MovementDict
+    | RoomActionDict
+    | FleeDict
+    | RoomChangeUpdate
+    | LevelUpNotification
+    | WIN
+    | int
+)
+
+
 class Game:
     players: dict[int, Player]
     mobs: dict[int, Mob]
@@ -50,14 +65,7 @@ class Game:
     start_time: int
 
     def __init__(self):
-        self.out_queue: Queue[
-            ActionDict
-            | MovementDict
-            | RoomActionDict
-            | FleeDict
-            | RoomChangeUpdate
-            | int
-        ] = Queue()
+        self.out_queue: Queue[OUT_QUEUE] = Queue()
         self.players = {}
         self.mobs = {}
         self.rooms = {}
@@ -190,11 +198,33 @@ class Game:
         return True
 
     async def update(self):
+        """One tick of the game!"""
+        # Update mobs.
         for mob_uid in self.mobs:
             self.mobs[mob_uid].update()
 
+        # Update players.
         for player_uid in self.players:
-            action_performed = self.players[player_uid].update()
+            player = self.players[player_uid]
+            action_performed = player.update()
+
+            if player.won:
+                win = {
+                    "type": WIN(type="WIN"),
+                    "uid": player_uid,
+                }
+                await self.out_queue.put(win)
+            elif player.level_past_tick < player.level:
+                level_up = {
+                    "type": LevelUpNotification(
+                        type="level_up",
+                        times_leveled=(player.level - player.level_past_tick),
+                        current_level=player.level,
+                    ),
+                    "uid": player_uid,
+                }
+                await self.out_queue.put(level_up)
+            player.level_past_tick = player.level
 
             match action_performed:
                 case list():
@@ -207,6 +237,7 @@ class Game:
                 case _:
                     await self.out_queue.put({"no_action": action_performed})
 
+        # Handle events in rooms.
         for room_uid in self.rooms:
             for event in self.rooms[room_uid].events:
                 await self.out_queue.put(event)
@@ -215,6 +246,43 @@ class Game:
             ].events = (
                 []
             )  # If an event was missed for whatever reason... to bad... it's a feature!
+
+    def clean_the_dead(self) -> list[int]:
+        ## First the mobs.
+        mobs_to_pop = []
+        for mob_uid in self.mobs:
+            mob = self.mobs[mob_uid]
+
+            if not mob.alive:
+                room = mob.in_room
+
+                if mob_uid in room.mob_combatants:
+                    room.mob_combatants.remove(mob_uid)
+
+                room.remove_mob(mob)
+                mobs_to_pop.append(mob_uid)
+
+        for mob_uid in mobs_to_pop:
+            self.mobs.pop(mob_uid)
+
+        ## Then the players.
+        players_to_pop = []
+        for player_uid in self.players:
+            player = self.players[player_uid]
+
+            if not player.alive:
+                room = player.in_room
+
+                if player_uid in room.player_combatants:
+                    room.player_combatants.remove(player_uid)
+
+                room.remove_player(player)
+                players_to_pop.append(player_uid)
+
+        for player_uid in players_to_pop:
+            self.players.pop(player_uid)
+
+        return players_to_pop  # Their connections will need to be deleted.
 
 
 if __name__ == "__main__":

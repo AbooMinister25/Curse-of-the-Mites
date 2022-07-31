@@ -90,6 +90,24 @@ class RoomInformationMessage(MessageBase[Literal["room_info"]]):
     entities: list[RoomChangeUpdate]
 
 
+class LevelUpNotification(MessageBase[Literal["level_up"]]):
+    """Message sent by the server to a player that levels up."""
+
+    times_leveled: int  # In case a player levels up more than once.
+    current_level: int
+
+
+class DEATH(MessageBase[Literal["DEATH"]]):
+    """Too bad! You died.
+
+    Sent to the player when they get an ice cream :P
+    """
+
+
+class WIN(MessageBase[Literal["WIN"]]):
+    """Congrats! You win."""
+
+
 CLIENT_REQUEST = (
     ChatMessage
     | InitializePlayer
@@ -99,9 +117,12 @@ CLIENT_REQUEST = (
 )
 SERVER_RESPONSE = (
     RegistrationSuccessful
+    | LevelUpNotification
     | ActionResponse
     | ChatMessage
     | ActionUpdateMessage
     | RoomChangeUpdate
+    | DEATH
+    | WIN
 )
 MESSAGE = CLIENT_REQUEST | SERVER_RESPONSE

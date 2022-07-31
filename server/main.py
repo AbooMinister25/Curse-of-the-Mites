@@ -6,6 +6,7 @@ from game_components.game import Game, Mob
 from game_components.game_objects import (
     ActionDict,
     BaseRoom,
+    Entity,
     FleeDict,
     MovementDict,
     Player,
@@ -17,12 +18,15 @@ from websockets.legacy.server import WebSocketServerProtocol
 
 from common.schemas import (
     CLIENT_REQUEST,
+    DEATH,
+    WIN,
     ActionNoTargetRequest,
     ActionResponse,
     ActionUpdateMessage,
     ActionWithTargetRequest,
     ChatMessage,
     InitializePlayer,
+    LevelUpNotification,
     MovementRequest,
     PlayerSchema,
     RegistrationSuccessful,
@@ -44,6 +48,12 @@ test_ant = Mob(
 game.add_mob(test_ant, 24, 16)
 
 
+test_ant2 = Mob(
+    "Test Ant2", ["bite"], game
+)  # TODO: find a better place for our trusty test ant.
+game.add_mob(test_ant2, 24, 16)
+
+
 def deserialize(message: str | bytes) -> CLIENT_REQUEST:
     return deserialize_client_request(json.loads(message))
 
@@ -56,7 +66,7 @@ async def initialize_player(connection: WebSocketServerProtocol) -> Player:
         raise InvalidMessage("Expected an `init` message.")
 
     username = event.username
-    player = Player(username, ["spit", "bite", "annoy"], game)
+    player = Player(username, ["spit", "bite", "annoy", "obliterate"], game)
 
     game.add_player(player, 24, 16)
 
@@ -188,6 +198,11 @@ async def game_loop():
 
         await send_updates(game.out_queue)
 
+        players_to_clean = game.clean_the_dead()
+
+        for player_uid in players_to_clean:
+            connections.pop(player_uid)
+
 
 async def send_updates(out_queue: asyncio.Queue):
     """Sends all the events in the queue to their respective players."""
@@ -200,6 +215,16 @@ async def send_updates(out_queue: asyncio.Queue):
                 room = game.get_room(action.room_uid)
                 player_uids = get_room_update_uids(room, action.entity_uid)
                 update = action
+            case {"type": (LevelUpNotification() as notif), "uid": uid}:
+                player_uids = uid
+                update = notif
+            case {"type": (WIN() as win), "uid": player_uid}:
+                player_uids = await get_win_update_uids(player_uid, win)
+                player_name = game.get_player(player_uid).name
+                update = ActionUpdateMessage(
+                    type="update",
+                    message=f"`{player_name}` became a beautiful butterfly and won!",
+                )
             case {"caster": uid}:
                 player_uids = uid
                 update = ActionUpdateMessage(
@@ -236,6 +261,11 @@ async def send_updates(out_queue: asyncio.Queue):
                 update = ActionUpdateMessage(
                     type="update",
                     message="Time passes by, but you didn't do anything this round!",
+                )
+            case {"room_of_death": room, "deceased": deceased}:
+                player_uids = await get_death_update_uids(room, deceased)
+                update = ActionUpdateMessage(
+                    type="update", message=f"`{deceased.name}` died!"
                 )
             case _:
                 # We should probably raise an error here... but it's gonna be fine.
@@ -313,6 +343,39 @@ def get_room_update_uids(room: BaseRoom, caster_uid: int) -> set:
     uids = {player.uid for player in players if player.uid != caster_uid}
 
     return uids
+
+
+async def get_death_update_uids(room: BaseRoom, deceased: Entity) -> set:
+    if isinstance(deceased, Player):
+        # We must handle the deceased with a bit more care.
+        await handle_dead_player_with_care(deceased.uid)
+        # If a player died then tell the entire server!
+        return {
+            player_uid
+            for player_uid in connections.keys()
+            if player_uid != deceased.uid
+        }
+    else:
+        # If a mob died, only tell the players in the room.
+        return {player.uid for player in room.get_players()}
+
+
+async def handle_dead_player_with_care(player_uid: int):
+    """Properly notifies the client of it's death."""
+    tactful_message = DEATH(type="DEATH")
+    deceased_connection = connections.get(player_uid)
+
+    if deceased_connection is not None:
+        await deceased_connection.send(tactful_message.json())
+
+
+async def get_win_update_uids(winner_uid: int, win: WIN) -> set[int]:
+    winner_connection = connections.get(winner_uid)
+    if winner_connection is not None:
+        await winner_connection.send(win.json())
+
+    # If a player won then tell the entire server!
+    return {player_uid for player_uid in connections.keys() if player_uid != winner_uid}
 
 
 def get_room_update_message(room_action: RoomActionDict) -> str:
