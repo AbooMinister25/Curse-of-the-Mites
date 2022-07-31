@@ -6,11 +6,13 @@ from .schemas import (
     SERVER_RESPONSE,
     ActionNoTargetRequest,
     ActionResponse,
+    ActionUpdateMessage,
     ActionWithTargetRequest,
     ChatMessage,
     InitializePlayer,
     MovementRequest,
     RegistrationSuccessful,
+    RoomChangeUpdate,
 )
 
 SERVER_RESPONSE_TYPES: dict[str, type[SERVER_RESPONSE]] = {}
@@ -27,7 +29,6 @@ def deserialize_client_request(event: dict[str, typing.Any]) -> CLIENT_REQUEST:
         case {"type": "init"}:
             return InitializePlayer(**event)
         case {"type": "move"}:
-            print(event)
             return MovementRequest(**event)
         case _:
             raise NotImplementedError(f"unknown event type `{event['type']}`")
@@ -41,6 +42,10 @@ def deserialize_server_response(event: dict[str, typing.Any]) -> SERVER_RESPONSE
             return RegistrationSuccessful(**event)
         case {"type": "action_response"}:
             return ActionResponse(**event)
+        case {"type": "update"}:
+            return ActionUpdateMessage(**event)
+        case {"type": "room_change"}:
+            return RoomChangeUpdate(**event)
         case _:
             raise NotImplementedError(f"unknown event type `{event['type']}`")
 

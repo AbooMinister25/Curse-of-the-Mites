@@ -7,7 +7,13 @@ from entities import Entities
 from map import Map
 from websocket_app import WebsocketApp
 
-from common.schemas import ActionResponse, ChatMessage, RegistrationSuccessful
+from common.schemas import (
+    ActionResponse,
+    ActionUpdateMessage,
+    ChatMessage,
+    RegistrationSuccessful,
+    RoomChangeUpdate,
+)
 from common.serialization import deserialize_server_response
 
 
@@ -69,9 +75,20 @@ class GameInterface(WebsocketApp):
                     self.console_widget.out.add_log(
                         f"Correctly registered as {self.name}"
                     )
+                    self.available_commands_widget.refresh()
                     self.console_widget.refresh()
                 case ActionResponse():
                     self.console_widget.out.add_log(event.response)
+                    self.console_widget.refresh()
+                case ActionUpdateMessage():
+                    self.console_widget.out.add_log(event.message)
+                    self.console_widget.refresh()
+                case RoomChangeUpdate():
+                    e_or_l = "entered" if event.enters else "left"
+                    self.console_widget.out.add_log(
+                        f"`{event.entity_name}` {e_or_l} the room!"
+                    )
+                    # TODO: display in entities in the room.
                     self.console_widget.refresh()
                 case _:
                     raise NotImplementedError(f"Unknown event {event!r}")

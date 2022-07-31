@@ -194,6 +194,8 @@ class Console(Widget):
                     log_display = await self.handle_movement(direction)
                 else:
                     log_display = f"{direction} isn't a direction!"
+            case [("!flee" | "!nvm" | "!clear") as action]:
+                log_display = await self.handle_action_without_target(action)
             case [action, target] if self.message.startswith("!"):
                 log_display = await self.handle_action_with_target(action, target)
             case [action] if self.message.startswith("!"):

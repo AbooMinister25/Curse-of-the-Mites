@@ -1,15 +1,21 @@
 import time
+from asyncio import Queue
+
+from common.schemas import RoomChangeUpdate
 
 if __name__ == "__main__":
     from game_objects import (
+        ActionDict,
         BaseRoom,
-        Combat,
+        FleeDict,
         LeftLower,
         LeftTop,
         Mob,
+        MovementDict,
         Player,
         RightLower,
         RightTop,
+        RoomActionDict,
         RoughSide,
         SpidersDen,
         TopOfLeaf,
@@ -18,14 +24,17 @@ if __name__ == "__main__":
     )
 else:
     from game_components.game_objects import (
+        ActionDict,
         BaseRoom,
-        Combat,
+        FleeDict,
         LeftLower,
         LeftTop,
         Mob,
+        MovementDict,
         Player,
         RightLower,
         RightTop,
+        RoomActionDict,
         RoughSide,
         SpidersDen,
         TopOfLeaf,
@@ -38,14 +47,20 @@ class Game:
     players: dict[int, Player]
     mobs: dict[int, Mob]
     rooms: dict[int, BaseRoom]
-    combats: list[Combat]
     start_time: int
 
     def __init__(self):
+        self.out_queue: Queue[
+            ActionDict
+            | MovementDict
+            | RoomActionDict
+            | FleeDict
+            | RoomChangeUpdate
+            | int
+        ] = Queue()
         self.players = {}
         self.mobs = {}
         self.rooms = {}
-        self.combats = []
         self.build_map()
         self.start_time = round(time.time() * 1000)
 
@@ -137,60 +152,69 @@ class Game:
                     current_room.set_links(directions)
 
     def add_player(self, player: Player, target_x: int, target_y: int) -> bool:
-        for room in self.rooms.values():
-            if room.can_entity_step:
-                if room.get_map_location() == (target_x, target_y):
-                    if player.uid not in self.players:
-                        self.players[player.uid] = player
-                    room.add_player(player)
-                    return True
-        else:
+        room = self.get_room_at(target_x, target_y)
+        assert room
+
+        if not room.can_entity_step:
             return False
 
-    def move_player(self, _player: Player, direction: str) -> bool:
+        if player.uid not in self.players:
+            self.players[player.uid] = player
+
+        room.add_player(player)
+        return True
+
+    def move_player(self, player: Player, direction: str) -> bool:
         if direction not in ("north", "east", "west", "south"):
             return False
 
         player_moved = False
 
-        # print("HERE")
-        for room in self.rooms.values():
-            if _player in room.get_players():
-                # print(_player)
-                # print(room.get_players())
-                to_go = room.get_links()[direction]
-                # print("ROOM TO GO TO")
-                # print(to_go)
-                # print("=======")
-                if to_go is not None and to_go.can_entity_step:
-                    room.remove_player(_player)
-                    to_go.add_player(_player)
-                    player_moved = True
-                break
+        from_room = player.in_room
+        to_go = from_room.get_links()[direction]
+
+        if to_go is not None and to_go.can_entity_step:
+            from_room.remove_player(player)
+            to_go.add_player(player)
+            player_moved = True
 
         return player_moved
 
     def add_mob(self, mob: Mob, target_x: int, target_y: int) -> bool:
-        for room in self.rooms.values():
-            if room.can_entity_step:
-                if room.get_map_location() == (target_x, target_y):
-                    room.add_mob(mob)
-                    return True
-        else:
-            return False
+        room = self.get_room_at(target_x, target_y)
+        assert room
+        assert room.can_entity_step
 
-    def update(self):
-        # REDUCE COMBATS
-        for i, _e in enumerate(self.combats):
-            for j, _f in enumerate(self.combats):
-                if i != j:
-                    result = _e.combine(_f)
-                    if result is not None:
-                        self.combats.remove(result)
-                        break
+        self.mobs[mob.uid] = mob
+        room.add_mob(mob)
+        return True
+
+    async def update(self):
+        for mob_uid in self.mobs:
+            self.mobs[mob_uid].update()
 
         for player_uid in self.players:
-            self.players[player_uid].update()
+            action_performed = self.players[player_uid].update()
+
+            match action_performed:
+                case list():
+                    if len(action_performed) == 0:
+                        await self.out_queue.put({"no_target": player_uid})
+                    for action in action_performed:
+                        await self.out_queue.put(action)
+                case dict():
+                    await self.out_queue.put(action_performed)
+                case _:
+                    await self.out_queue.put({"no_action": action_performed})
+
+        for room_uid in self.rooms:
+            for event in self.rooms[room_uid].events:
+                await self.out_queue.put(event)
+            self.rooms[
+                room_uid
+            ].events = (
+                []
+            )  # If an event was missed for whatever reason... to bad... it's a feature!
 
 
 if __name__ == "__main__":
@@ -247,30 +271,6 @@ if __name__ == "__main__":
             print(f"\t{k}: {v}")
     print(temp)
     """
-    # Test Combats
-    #
-    c = Mob("antc", ["bite"])
-    g.add_mob(c, 1, 1)
-    # adding a player to a map location
-    B = Player("aboo", ["stomp", "spit"], g)
-    g.add_player(B, 1, 1)
-    d = Mob("antd", ["eat_berry", "bite", "stomp"])
-    g.add_mob(d, 1, 1)
-    C = Player("baut", ["eat_berry", "bite", "spit"], g)
-    combata = Combat([A, a], temp)
-    combatb = Combat([B, b, c], temp)
-    combatc = Combat([d, C], g.get_room_at(2, 2))
-    g.combats.append(combata)
-    g.combats.append(combatb)
-    g.combats.append(combatc)
-    for i, combat in enumerate(g.combats):
-        print(i, combat)
-    combatb.add_to_combat(A)
-    combata.add_to_combat(d)
-    g.update()
-    print("~Reduced~")  # Combats in the same room get reduced.
-    for i, combat in enumerate(g.combats):
-        print(i, combat)
 
     # Test movements.
     print("~~~~~~~~~~~")
