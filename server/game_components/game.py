@@ -107,18 +107,26 @@ class Game:
         return self.mobs.get(_uid)
 
     def spawn_mobs(self) -> None:
+
         for room in self.rooms.values():
+            if room.get_map_location() == (15, 23):
+                m = Mob("Mite", ["nibble", "eat_berry", "stomp", "annoy"], self)
+                # print(f"Adding mite at {room.get_map_location()}")
+                room.add_mob(m)
+                continue
             if isinstance(room, Wall):
                 continue
             if isinstance(room, SpidersDen):
                 m = Mob("Spider", ["sting", "eat_berry", "nibble"], self)
+                # print(f"Adding spider at {room.get_map_location()}")
                 room.add_mob(m)
                 continue
             chance_to_spawn = random.randint(0, 100)
 
             # if there are too many mobs, make this magic number lower
-            if chance_to_spawn < 20:
+            if chance_to_spawn < 25:
                 m = Mob("Mite", ["nibble", "eat_berry", "stomp", "annoy"], self)
+                # print(f"Adding mite at {room.get_map_location()}")
                 room.add_mob(m)
 
     def build_map(self) -> None:
