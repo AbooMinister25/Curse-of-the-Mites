@@ -122,6 +122,7 @@ class Console(Widget):
     message = ""
     console_log: list[str] = []
     out: ConsoleLog = ConsoleLog()
+    already_registered: bool = False
 
     def __init__(self, main_app: GameInterface, name: str | None = None) -> None:
         self.main_app = main_app
@@ -204,7 +205,10 @@ class Console(Widget):
                 self.out.reverse_log = not self.out.reverse_log
                 log_display = "Console output reversed."
             case ["/register", username]:
-                log_display = await self.register(username)
+                if not self.already_registered:
+                    log_display = await self.register(username)
+                else:
+                    log_display = "You already registered!"
             case ["!move", direction]:
                 if direction in ["north", "south", "east", "west"]:
                     log_display = await self.handle_movement(direction)
@@ -227,6 +231,8 @@ class Console(Widget):
 
     async def register(self, username: str) -> str:
         """Sends an init request to the server to initialize our player."""
+        self.already_registered = True
+
         p_request = InitializePlayer(type="init", username=username)
         await self.main_app.websocket.send(p_request.json())
 
