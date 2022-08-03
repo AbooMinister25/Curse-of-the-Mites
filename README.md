@@ -42,7 +42,7 @@ Multiple clients can be run and connected to the server at the same time.
 
 ## Gameplay
 
-Curse of the Mites's (CooM) main objective is for you to gain enough XP to level up until you become a butterfly. XP is gained through killing mobs and players around the map.
+Curse of the Mites's (CotM) main objective is for you to gain enough XP to level up until you become a butterfly. XP is gained through killing mobs and players around the map.
 
 ### Registering
 
