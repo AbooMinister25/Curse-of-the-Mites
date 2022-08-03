@@ -131,3 +131,35 @@ For example (let's assume your moves aren't scrambled), if you type `!move north
 
 ### Chatting
 Anything other than a valid action that you type will be treated as chatting. Chatting is instantaneous and every other player in the server will be able to read what you said.
+
+# Design decisions
+
+## Technical decisions
+
+### Communications
+
+Both the server and the client utilize the `websockets` library to send and receive all of their messages.
+
+Both in the client and the server we have decided to have a single "message handler". This is to avoid problems with two points of the program trying to `recv` messages at the same time which leads to a `websockets` exception. This also ensures that we can receive messages at almost any point of the runtime, since trying to create specific windows of time when only specific messages can be received can lead to unexpected bugs.
+
+The only exception to this rule is the initialization of a client. Since most other actions require the client to have a caterpillar, we must make sure that the first message the server receives from a new client is a `register` message.
+
+The structure of all possible messages to be sent and received is given by pydantic models in `/common/schemas.py`. The sender must build a valid message using one of these models, and the receiver can deserialize it using the functions from `/common/deserialize.py`.
+
+Our message handlers utilize pattern matching to easily handle each kind of message (example from `/client/main.py`):
+```py
+event = deserialize_server_response(json.loads(message))
+match event:
+    case ChatMessage():
+        self.console_widget.out.add_log(
+            f"{event.player_name}: {event.chat_message}"
+        )
+    case RegistrationSuccessful():
+        self.initialized = True
+        self.name = event.player.name
+        ...
+```
+
+Normally the server immediately tries to respond to the client after receiving a message, this is because we want the player to have some form of immediate feedback of their action having been processed (e.g: `Added action to queue`).
+
+Once a turn has passed, after the player already received some immediate feedback, the server will send the client information about the results of their actions and other relevant actions that were effectuated by other entities.
