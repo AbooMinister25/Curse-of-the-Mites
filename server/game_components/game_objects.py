@@ -827,7 +827,7 @@ all_actions = {
     ),
     "stomp": Action("stomp", 15, 5, 15, 70, False, True, True),
     "spit": Action("spit", 25, 15, 50, 30, True, False, True),
-    "eat_berry": Action("eat", 5, -5, -10, 100, False, False, False),
+    "eat_berry": Action("eat_berry", 5, -5, -10, 100, False, False, False),
     "annoy": Action("annoy", 0, 1, 1, 100, True, False, True),
     "sing": Action(
         _name="sing",
