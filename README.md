@@ -1,176 +1,165 @@
-# Python Discord Code Jam Repository Template
+# Curse of the Mites
 
-## A Primer
-Hello code jam participants! We've put together this repository template for you to use in [our code jams](https://pythondiscord.com/events/) or even other Python events!
+Curse of the Mites is a text based MUD (multi-user dungeon) in which you play as a caterpillar whose goal is to grow into a butterfly to escape the forest cursed by mites.
 
-This document will contain the following information:
-1. [What does this template contain?](#what-does-this-template-contain)
-2. [How do I use it?](#how-do-i-use-it)
-3. [How do I adapt it to my project?](#how-do-i-adapt-it-to-my-project)
+(Recommended reading to truly appreciate the nastiness of mites: https://en.wikipedia.org/wiki/Varroa_destructor)
 
-You can also look at [our style guide](https://pythondiscord.com/events/code-jams/code-style-guide/) to get more information about what we consider a maintainable code style.
+Curse of the Mites has a server based off of `websockets`, and a TUI client written with the `textual` framework and `websockets` for communications.
 
-## What does this template contain?
+All of the possible messages that can be sent and received between the client and the server correspond to pydantic schemas stored in the `/common` folder.
 
-Here is a quick rundown of what each file in this repository contains:
-- `LICENSE`: [The MIT License](https://opensource.org/licenses/MIT), an OSS approved license which grants rights to everyone to use and modify your projects and limits your liability. We highly recommend you to read the license.
-- `.gitignore`: A list of files that will be ignored by Git. Most of them are auto-generated or contain data that you wouldn't want to share publicly.
-- `dev-requirements.txt`: Every PyPI packages used for the project's development, to ensure a common and maintainable code style. [More on that below](#using-the-default-pip-setup).
-- `tox.ini`: The configurations of two of our style tools: [`flake8`](https://pypi.org/project/flake8/) and [`isort`](https://pypi.org/project/isort/).
-- `.pre-commit-config.yaml`: The configuration of the [`pre-commit`](https://pypi.org/project/pre-commit/) tool.
-- `.github/workflows/lint.yaml`: A [GitHub Actions](https://github.com/features/actions) workflow, a set of actions run by GitHub on their server after each push, to ensure the style requirements are met.
+![Client Preview](/assets/client-preview.png)
 
-Each of these files have comments for you to understand easily, and modify to fit your needs.
+## Getting started
 
-### flake8: general style rules
+### Dependencies
 
-Our first and probably most important tool is flake8. It will run a set of plugins on your codebase and warn you about any non-conforming lines.
-Here is a sample output:
-```
-~> flake8
-./app.py:1:6: N802 function name 'helloWorld' should be lowercase
-./app.py:1:16: E201 whitespace after '('
-./app.py:2:1: D400 First line should end with a period
-./app.py:2:1: D403 First word of the first line should be properly capitalized
-./app.py:3:19: E225 missing whitespace around operator
-```
+- Python (3.10)
+- Poetry
+- Git (for cloning the repository)
 
-Each line corresponds to an error. The first part is the file path, then the line number, and the column index.
-Then comes the error code, a unique identifier of the error, and then a human-readable message.
+### Clone Repository
 
-If, for any reason, you do not wish to comply with this specific error on a specific line, you can add `# noqa: CODE` at the end of the line.
-For example:
-```python
-def helloWorld():  # noqa: N802
-    ...
-```
-will pass linting. Although we do not recommend ignoring errors unless you have a good reason to do so.
-
-It is run by calling `flake8` in the project root.
-
-#### Plugin List:
-
-- `flake8-docstring`: Checks that you properly documented your code.
-
-### ISort: automatic import sorting
-
-This second tool will sort your imports according to the [PEP8](https://www.python.org/dev/peps/pep-0008/#imports). That's it! One less thing for you to do!
-
-It is run by calling `isort .` in the project root. Notice the dot at the end, it tells ISort to use the current directory.
-
-### Pre-commit: run linting before committing
-
-This third tool doesn't check your code, but rather makes sure that you actually *do* check it.
-
-It makes use of a feature called [Git hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks) which allow you to run a piece of code before running `git commit`.
-The good thing about it is that it will cancel your commit if the lint doesn't pass. You won't have to wait for Github Actions to report and have a second fix commit.
-
-It is *installed* by running `pre-commit install` and can be run manually by calling only `pre-commit`.
-
-[Lint before you push!](https://soundcloud.com/lemonsaurusrex/lint-before-you-push)
-
-#### Hooks List:
-
-- `check-toml`: Lints and corrects your TOML files.
-- `check-yaml`: Lints and corrects your YAML files.
-- `end-of-file-fixer`: Makes sure you always have an empty line at the end of your file.
-- `trailing-whitespaces`: Removes whitespaces at the end of each line.
-- `python-check-blanket-noqa`: Forbids you from using noqas on large pieces of code.
-- `isort`: Runs ISort.
-- `flake8`: Runs flake8.
-
-## How do I use it?
-
-### Creating your Team Repository
-
-One person in the team, preferably the leader, will have to create the repository and add other members as collaborators.
-
-1. In the top right corner of your screen, where **Clone** usually is, you have a **Use this template** button to click.
-
-![](https://docs.github.com/assets/images/help/repository/use-this-template-button.png)
-
-2. Give the repository a name and a description.
-
-![](https://docs.github.com/assets/images/help/repository/create-repository-name.png)
-
-3. Click **Create repository from template**.
-
-4. Click **Settings** in your newly created repository.
-
-![](https://docs.github.com/assets/images/help/repository/repo-actions-settings.png)
-
-5. Select **Manage access**.
-
-<!-- Yes, this is inline html. The source image is too vertical to be displayed with 100% width. -->
-<img src="https://docs.github.com/assets/images/help/repository/manage-access-tab.png" style="width: 30%"></img>
-
-6. Click **Invite a collaborator**.
-
-![](https://docs.github.com/assets/images/help/repository/invite-a-collaborator-button.png)
-
-7. Insert the names of each of your teammates, and invite them. Once they have accepted the invitation in their email, they will have write access to the repository.
-
-You are now ready to go! Now sit down, relax, and wait for the kickstart!
-Don't forget to swap "Python Discord" in the `LICENSE` file for the name of each of your team members or the name of your team after the start of the jam.
-
-### Using the Default Pip Setup
-
-Our default setup includes a bare requirement file to be used with a [virtual environment](https://docs.python.org/3/library/venv.html).
-
-We recommend this if you never have used any other dependency manager, although if you have, feel free to switch to it. More on that below.
-
-#### Creating the environment
-Create a virtual environment in the folder `.venv`.
 ```shell
-$ python -m venv .venv
+git clone git@github.com:AbooMinister25/Curse-of-the-Mites.git
 ```
 
-#### Enter the environment
-It will change based on your operating system and shell.
+### Install the game.
+
+To install the server:
+Enter the `/server` folder in your terminal and run:
 ```shell
-# Linux, Bash
-$ source .venv/bin/activate
-# Linux, Fish
-$ source .venv/bin/activate.fish
-# Linux, Csh
-$ source .venv/bin/activate.csh
-# Linux, PowerShell Core
-$ .venv/bin/Activate.ps1
-# Windows, cmd.exe
-> .venv\Scripts\activate.bat
-# Windows, PowerShell
-> .venv\Scripts\Activate.ps1
+poetry install
 ```
 
-#### Installing the Dependencies
-Once the environment is created and activated, use this command to install the development dependencies.
+Same steps are required for the client (but you must enter the `/client` folder).
+
+### Run Server
+
+Make sure you are in the `/server` folder and run:
+
 ```shell
-$ pip install -r dev-requirements.txt
+poetry run python3 main.py
 ```
 
-#### Exiting the environment
-Interestingly enough, it is the same for every platform
+### Run the client
+
+Run the server before you attempt running the client.
+Make sure you are in the `/client` folder and that whatever terminal you're using is full-screened. Then you can run:
+
 ```shell
-$ deactivate
+poetry run python3 main.py
 ```
 
-Once the environment is activated, all the commands listed previously should work. We highly recommend that you run `pre-commit install` as soon as possible.
+Multiple clients can be run and connected to the server at the same time.
 
-## How do I adapt it to my project?
+## Gameplay
 
-If you wish to use Pipenv or Poetry, you will have to move the dependencies in `dev-requirements.txt` to the development dependencies of your tool.
+Curse of the Mites's (CotM) main objective is for you to gain enough XP to level up until you become a butterfly. XP is gained through killing mobs around the map. You control your caterpillar through the client's console.
 
-We've included a porting of `dev-requirements.txt` to both [poetry](./samples/pyproject.toml) and [pipenv](./samples/Pipfile) in the [samples folder](./samples).
-If you use the poetry setup, make sure to change the project name, description, and authors at the top of the file.
+The twist of the game is that the titular "curse" is brain scrambling! Each of your actions is actually mapped to a different action. For example: when you try to `!move north` you may end up moving south. Or when you try to `!sing` to your allies to heal them you'll spit and hurt them!
 
-When installing new dependencies, don't forget to [pin them](https://pip.pypa.io/en/stable/user_guide/#pinned-version-numbers) by adding a version tag at the end.
-For example, if I wish to install `Click`, a quick look at [PyPI](https://pypi.org/project/click/) tells me that 8.0.1 is the latest version.
-I will then add `click ~= 8.0`, without the last number, to my dependency manager.
+### Registering
 
-A code jam project is left unmaintained after the end of the event. If the dependencies aren't pinned, the project will break after the first major change in an API.
+Once you launch your client, you will be asked to register. All this consists of is you providing a username to go by while playing the game. You can register by using the `/register` command, followed by your username.
 
-## Final words
+```
+/register aboo
+```
+If you disconnect while playing the game your caterpillar's brain will be completely melted and it'll die (yes, you're a bad person).
 
-Don't forget to replace this README with an actual description of your project! Images are also welcome!
+### The console
 
-We hope this template will be helpful. Good luck in the jam!
+This is a "console" within the console you're currently running your client in. It contains a space for you to type your commands in at the bottom and a log for you to receive information about the game on top.
+
+Keep in mind that if you clicked outside of the console you'll have to click into it in order to type.
+
+You can type in `/help` to receive help about your available commands.
+
+### The Map
+
+The map is shown above your console, and lists all players and your current position. Your character will be marked by a yellow `@` sign, while other players will be marked by a blue one. You will not be able to see mobs, and the console will notify you if you encounter one.
+
+Each "tile" of the map corresponds to a room, you must be in the same room as other entities in order to interact with them.
+
+### Time
+
+"Time" in this game happens every 6 seconds! Which means after each round every player will have a 6 second interval to decide what they wish to do next. Once time "ticks" the next queued move of every player will be used.
+
+### Actions
+
+You can see all of the actions you have available in the bottom right corner of your console.
+There are two main type of actions, movement and "spells":
+
+#### Movement
+Movement is done through the `!move` command, followed by whatever direction you wish to move in (one of north, east, south, west). For example: `!move north`.
+
+You can also use numbers to move the following way (this type of movement is intended to be done with the numpad):
+```
+         (north?)
+            8
+            ↑
+(west?) 4 ← . → 6 (east?)
+            ↓
+            2
+         (south?)
+```
+Once you start fighting with mobs you cannot move! If you really want to get out of there you'll have to try `!flee`ing.
+
+#### Spells
+Spells are your way of affecting the health of other entities and yourself. There are targeted attacks and heals, AOE attacks and heals (not targeted) and self heals (not targeted).
+
+When your brain is scrambled, targeted spells will be mapped to other targeted spells and the same will happen with no-target spells.
+
+AOE (area of effect) spells will affect every entity in the room other than the caster. Keep in mind that they can be very powerful but you may harm your fellow players and heal your enemies with them!
+
+To try casting a spell simply do `!(name of the spell)` or `!(name of the spell) (name of the target)` if the spell is targeted. You can see the names of the entities you can target in the top right corner of the console.
+
+#### Special actions
+There are three special actions that do not get scrambled:
+
+`!nvm`: removes the last action you entered from your action queue.
+
+`!clear`: removes every action from your action queue.
+
+`!flee`: allows you to abandon a combat and move (keep in mind that it has a chance of failing!).
+
+### The action queue
+Each time you type in an action command, this action gets added to your caterpillar's action queue. This allows you to "prepare" moves for next rounds.
+
+For example (let's assume your moves aren't scrambled), if you type `!move north`, `!move east`, `!sing` in quick succession: next round your caterpillar will move north, 6 seconds after that it'll move east and after another 6 seconds it will sing.
+
+### Chatting
+Anything other than a valid action that you type will be treated as chatting. Chatting is instantaneous and every other player in the server will be able to read what you said.
+
+# Design decisions
+
+## Technical decisions
+
+### Communications
+
+Both the server and the client utilize the `websockets` library to send and receive all of their messages.
+
+Both in the client and the server we have decided to have a single "message handler". This is to avoid problems with two points of the program trying to `recv` messages at the same time which leads to a `websockets` exception. This also ensures that we can receive messages at almost any point of the runtime, since trying to create specific windows of time when only specific messages can be received can lead to unexpected bugs.
+
+The only exception to this rule is the initialization of a client. Since most other actions require the client to have a caterpillar, we must make sure that the first message the server receives from a new client is a `register` message.
+
+The structure of all possible messages to be sent and received is given by pydantic models in `/common/schemas.py`. The sender must build a valid message using one of these models, and the receiver can deserialize it using the functions from `/common/deserialize.py`.
+
+Our message handlers utilize pattern matching to easily handle each kind of message (example from `/client/main.py`):
+```py
+event = deserialize_server_response(json.loads(message))
+match event:
+    case ChatMessage():
+        self.console_widget.out.add_log(
+            f"{event.player_name}: {event.chat_message}"
+        )
+    case RegistrationSuccessful():
+        self.initialized = True
+        self.name = event.player.name
+        ...
+```
+
+Normally the server immediately tries to respond to the client after receiving a message, this is because we want the player to have some form of immediate feedback of their action having been processed (e.g: `Added action to queue`).
+
+Once a turn has passed, after the player already received some immediate feedback, the server will send the client information about the results of their actions and other relevant actions that were effectuated by other entities.
