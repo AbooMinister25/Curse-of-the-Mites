@@ -133,13 +133,17 @@ For example (let's assume your moves aren't scrambled), if you type `!move north
 Anything other than a valid action that you type will be treated as chatting. Chatting is instantaneous and every other player in the server will be able to read what you said.
 
 
+### Combat
+Combat can be between two players, or a player and a mob. In order to engage in combat with a mob, you will need to be in the same room as the mob, and be the one to make the first move. Mobs will not attack unless provoked. Attacks from a mob you are engaged in combat with will happen every tick of the game.
+
+
 ## The Interface
 The interface for the MUD is in the form of a TUI with four distinct sections. 
 
 ### The Map
 On the top left is the map. The map displays your player's location as a yellow `@` sign, and other players as a blue `@` sign. Other entities besides players will not
 be displayed on the map (Spiders and Mites). Each tile on the map is a room, rooms are colored based on what they are. Leaves are light green and dark green, the player can freely move on them. Walls are green, the player cannot move towards them.
-Spiders Den's are red. When you mvoe onto a Spiders Den, you will encounter a Spider.
+Spiders Den's are red. When you move onto a Spiders Den, you will encounter a Spider.
 
 ![Map](/assets/map.png)
 
