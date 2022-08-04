@@ -21,7 +21,7 @@ All of the possible messages that can be sent and received between the client an
 ### Clone Repository
 
 ```shell
-git clone git@github.com:AbooMinister25/Curse-of-the-Mites.git
+git clone https://github.com/AbooMinister25/Curse-of-the-Mites.git
 ```
 
 ### Install the game.
@@ -132,9 +132,36 @@ For example (let's assume your moves aren't scrambled), if you type `!move north
 ### Chatting
 Anything other than a valid action that you type will be treated as chatting. Chatting is instantaneous and every other player in the server will be able to read what you said.
 
-# Design decisions
 
-## Technical decisions
+## The Interface
+The interface for the MUD is in the form of a TUI with four distinct sections. 
+
+### The Map
+On the top left is the map. The map displays your player's location as a yellow `@` sign, and other players as a blue `@` sign. Other entities besides players will not
+be displayed on the map (Spiders and Mites). Each tile on the map is a room, rooms are colored based on what they are. Leaves are light green and dark green, the player can freely move on them. Walls are green, the player cannot move towards them.
+Spiders Den's are red. When you mvoe onto a Spiders Den, you will encounter a Spider.
+
+![Map](/assets/map.png)
+
+### The Console
+The console is located on the bottom left of the interface. The console itself is divided into two parts. The bottom part consists of a message box, where you can enter chat messages and run commands. The top part is the out console, it is a log
+of all messages, events, and chat messages that have occured in the MUD. When you send a chat message, it will appear on the out console in the format `[name]: [message]`. The out console will also display different events. When another player
+enters your room, you will recieve a notification in the out console. When you try to do an action and are out of mana, the out console will notify you. The out console will also display the status of events like combat. You can use the
+up/down arrow keys to scroll up or down the console.
+
+![Console](/assets/console.png)
+
+### Entities List
+The entities list is located on the top right of the interface. It will list all entities which are in your room. Since you cannot see mobs on the map, the entities list is how you will know whether a mob is in your room or not.
+
+![Console](/assets/entities.png)
+
+### Allowed Moves List
+The allowed moves list lists all of the allowed moves you can make.
+
+![Console](/assets/allowed_moves.png)
+
+## Design decisions
 
 ### Communications
 
@@ -162,4 +189,4 @@ match event:
 
 Normally the server immediately tries to respond to the client after receiving a message, this is because we want the player to have some form of immediate feedback of their action having been processed (e.g: `Added action to queue`).
 
-Once a turn has passed, after the player already received some immediate feedback, the server will send the client information about the results of their actions and other relevant actions that were effectuated by other entities.
+Once a turn has passed, after the player already received some immediate feedback, the server will send the client information about the results of their actions and other relevant actions that were effected by other entities.
