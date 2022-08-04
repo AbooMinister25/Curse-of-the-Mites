@@ -126,7 +126,7 @@ There are three special actions that do not get scrambled:
 
 ### Combat strategy
 
-Enemies can have a lot of health and they can even regenerate it. It's encourage that you play with other "players" instead of fighting solo since combat will be much more entertaining and quick!
+Enemies can have a lot of health and they can even regenerate it. It's encouraged that you team up with other "players" instead of fighting solo since combat will be much more entertaining and faster paced!
 
 ### The action queue
 Each time you type in an action command, this action gets added to your caterpillar's action queue. This allows you to "prepare" moves for next rounds.
